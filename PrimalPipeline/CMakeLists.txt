@@ -1,0 +1,8 @@
+elements_subdir(PrimalPipeline)
+
+elements_depends_on_subdirs(ElementsKernel)
+elements_depends_on_subdirs(PrimalCore)
+
+elements_install_python_modules()
+
+elements_add_python_program(SomeOtherScript PrimalPipeline.SomeOtherScript)

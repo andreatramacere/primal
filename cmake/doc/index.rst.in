@@ -1,0 +1,43 @@
+.. @PROJECT_NAME@ @CMAKE_PROJECT_VERSION@ documentation master file
+
+================================================================
+@PROJECT_NAME@ Documentation
+================================================================
+* Version: @CMAKE_PROJECT_VERSION@ 
+
+================
+
+
+Coding documentation & Project Overview
+=======================================
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Table of Contents
+
+   doc_project
+
+API Documentation
+=================
+
+.. toctree::
+   :maxdepth: 1
+
+   elements_modules
+
+.. @SPHINX_EL_MODULES@
+
+
+Legacy
+======
+
+@SPHINX_ORIGINAL_DOX@
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

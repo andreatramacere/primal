@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+
+
+from __future__ import absolute_import, division, print_function
+
+from builtins import (bytes, str, open, super, range,
+                      zip, round, input, int, pow, object, map, zip)
+
+__author__ = "Andrea Tramacere"
+
+# Standard library
+# eg copy
+# absolute import rg:from copy import deepcopy
+
+# Dependencies
+# eg numpy 
+# absolute import eg: import numpy as np
+import  argparse
+import matplotlib.pyplot as plt
+
+try:
+    import  pyfits as pf
+except:
+    try:
+        from astropy.io import fits as pf
+    except ImportError:
+        raise ImportError('')
+
+# Project
+# relative import eg: from .mod import f
+from PrimalInteractive.plotting.phz_plots import  *
+from PrimalCore.io.fits import read_data
+from PrimalCore.heterogeneous_table.table import Table
+from PrimalCore.pdf.stats import eval_pit,eval_pdf_gmm,eval_crps
+
+
+
+def plot_pdf(data,ind,fig_title):
+    figi = plt.figure()
+    figi.canvas.set_window_title(fig_title)
+    axi = figi.add_subplot(111)
+
+    z_spec = data['z_spec'][ind]
+    z_phot = data['z_phot'][ind]
+    axi.hist(data['z_phot_values'][ind] , label='hist',normed=True,alpha=0.5)
+    axi.plot(data['z_phot_pdf_grid'][ind] , data['z_phot_pdf'][ind], '-', label='gmm pdf',color='black')
+    y = axi.get_ylim()
+    axi.plot([z_spec, z_spec], y, label='z_spec')
+    axi.plot([z_phot, z_phot], y, label='z_phot')
+    axi.set_xlabel("z_phot", fontsize=18)
+
+    axi.legend(loc='best', fontsize=18)
+
+    axi.set_title('selected=%d\ncatalog_id=%d' % (ind, data['original_row_ID'][ind]))
+    figi.show()
+    return True
+
+def  run(in_file,bias=0.15):
+
+    data,h=read_data(in_file)
+
+    catalog = Table.from_fits_file(h.get('cat_file'), fits_ext=1)
+
+    fig = plt.figure()
+    fig.canvas.set_window_title(in_file)
+
+    ax = fig.add_subplot(111)
+
+    ax.set_title('Primal PHZ predictions  (sample size %d)'%data['z_spec'].size)
+    x = np.linspace(data['z_spec'].min(), data['z_spec'].max(), 100)
+
+
+    line, = ax.plot(data['z_spec'], data['z_phot'], 'o', picker=5, ms=2.0, color='blue',)
+
+    int_plot = PdfInteractivePlot(data,line,ax,fig,in_file,catalog=catalog)
+    ax.plot(x, x, '-', color='red', lw=1.5)
+    ax.plot(x, x + bias * (1 + x), '--', lw=1.5, color='red')
+    ax.plot(x, x - bias * (1 + x), '--', lw=1.5, color='red')
+
+
+    fig.canvas.mpl_connect('pick_event', int_plot.onpick_pdf)
+
+
+    z_min = min(data['z_spec'].min(), data['z_phot'].min())
+    z_max = min(data['z_spec'].max(), data['z_phot'].max())
+    ax.set_xlim([z_min - 0.1, z_max + 0.1])
+    ax.set_ylim([z_min - 0.1, z_max + 0.1])
+    ax.set_ylabel("z_phot", fontsize=20)
+    ax.set_xlabel("z_spec", fontsize=20)
+
+
+    fig1,(ax1,ax2)=plt.subplots(1,2)
+    fig1.canvas.set_window_title(in_file)
+
+    pit = eval_pit(data['z_phot_values'], data['z_spec'])
+    plot_PIT_histogram(pit, ax=ax1)
+
+    cprs = eval_crps(data['z_phot_values'],data['z_spec'])
+    plot_CRPS_histogram(cprs, ax=ax2)
+
+
+
+    plt.show()
+
+
+
+class PdfInteractivePlot( object):
+
+    def __init__(self,pdf_data,line,ax,fig,fig_title,catalog=None):
+        self.pdf_data=pdf_data
+        self.line=line
+        self.ax=ax
+        self.fig=fig
+        self.catalog=catalog
+        self.fig_title=fig_title
+        self.selected, = self.ax.plot(0,0, 'o', ms=12,
+                                      alpha=0.4, color='yellow', visible=False)
+
+        self.text = ax.text(0.05, 0.95, 'selected: none',
+                            transform=ax.transAxes, va='top')
+
+    def onpick_pdf(self,event):
+        if event.artist != self.line:
+            return True
+
+        N = len(event.ind)
+        if not N:
+            return True
+
+        # the click locations
+        x = event.mouseevent.xdata
+        y = event.mouseevent.ydata
+
+        distances = np.hypot(x - self.pdf_data['z_spec'][event.ind], y - self.pdf_data['z_phot'][event.ind])
+        indmin = distances.argmin()
+        dataind = event.ind[indmin]
+        plot_pdf(self.pdf_data, dataind,self.fig_title)
+        if self.catalog is not None:
+            print ("------------------------------------------------------------")
+            self.catalog.print_entry(self.pdf_data['original_row_ID'][dataind])
+            print("------------------------------------------------------------")
+
+        self.lastind = dataind
+        self.update()
+
+    def update(self):
+        if self.lastind is None:
+            return
+
+        dataind = self.lastind
+
+
+
+        self.selected.set_data(self.pdf_data['z_spec'][dataind],self.pdf_data['z_phot'][dataind])
+        self.selected.set_visible(True)
+
+
+        self.text.set_text('selected: %d, catalog_id %d' %(dataind,self.pdf_data['original_row_ID'][dataind]))
+        self.fig.canvas.draw()
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+
+
+    parser.add_argument('input_pdf_file', type=str, default=None )
+
+
+    args = parser.parse_args()
+
+
+    run(args.input_pdf_file)
+
+
+
+if  __name__ == "__main__":
+    main()
