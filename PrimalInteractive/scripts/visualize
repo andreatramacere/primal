@@ -66,7 +66,7 @@ def  run(in_file,bias=0.15):
 
     ax = fig.add_subplot(111)
 
-    ax.set_title('Primal PHZ predictions  (sample size %d)'%data['z_spec'].size)
+    ax.set_title('Primal_No_Elements PHZ predictions  (sample size %d)'%data['z_spec'].size)
     x = np.linspace(data['z_spec'].min(), data['z_spec'].max(), 100)
 
 
