@@ -46,4 +46,3 @@ for importer, modname, ispkg in pkgutil.walk_packages(path=[pkg_dir],
     else:
         pass
 
-print(__all__)
