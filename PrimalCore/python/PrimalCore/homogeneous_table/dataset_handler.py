@@ -48,6 +48,13 @@ from .dataset import MLDataSet
 from .tools import *
 from ..heterogeneous_table.tools import build_names_list
 
+try:
+    basestring
+    str=basestring
+
+except NameError:
+    pass
+
 __author__ = "Andrea Tramacere"
 
 
@@ -59,7 +66,7 @@ def check_dataset_decorate(func,dataset,*args, **kwargs):
 
 @decorator.decorator
 def check_names_list_decorate(func,dataset,names,*args, **kwargs):
-    if isinstance(names,basestring):
+    if isinstance(names,str):
         feature_names_list=[names]
 
     elif type(names)==list:
@@ -77,7 +84,7 @@ def check_names_list_decorate(func,dataset,names,*args, **kwargs):
         raise RuntimeError('features names is not compatible with str, list, or array')
 
     for name in feature_names_list:
-        if isinstance(name, basestring):
+        if isinstance(name, str):
             pass
         else:
             raise RuntimeError('features names is not compatible with str, list of strings, array of strings')

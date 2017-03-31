@@ -114,7 +114,7 @@ class MLDataSet(object):
         if features_names is not None:
             self._features_names=features_names
         else:
-            self._features_names=['F_%d'%ID for ID in xrange(features.shape[1])]
+            self._features_names=['F_%d'%ID for ID in range(features.shape[1])]
 
 
         if target_array is not None:
@@ -552,7 +552,7 @@ class MLDataSet(object):
         """
 
         print("| building features")
-        cols_ID_use_list=xrange(table.N_cols)
+        cols_ID_use_list=range(table.N_cols)
         names_list=table.column_names
 
         if target_col_num is not None:
@@ -563,7 +563,7 @@ class MLDataSet(object):
 
         #column filtering
         if skip_col_num_list!=[] and skip_col_num_list is not None:
-            cols_ID_use_list=[ID for ID in xrange(table.N_cols) if ID not in skip_col_num_list]
+            cols_ID_use_list=[ID for ID in range(table.N_cols) if ID not in skip_col_num_list]
             names_list=names_list[cols_ID_use_list]
 
         if use_col_num_list!=[] and use_col_num_list is not None:
@@ -610,7 +610,7 @@ class MLDataSet(object):
                 weight_array=weight_array[rows_IDs_use_list]
 
         if rows_IDs_skip_list!=[] and    rows_IDs_skip_list!=None:
-            use_list=[ID for ID in xrange(table.N_rows) if ID not in rows_IDs_skip_list]
+            use_list=[ID for ID in range(table.N_rows) if ID not in rows_IDs_skip_list]
             features=features[use_list]
             features_original_entry_ID=features_original_entry_ID[use_list]
             if target_array is not None:

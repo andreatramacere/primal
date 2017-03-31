@@ -83,12 +83,12 @@ def extract_pdf(model,ml_dataset,z_phot=None,pdf_grid_size=100,gmm_components=2,
 
     pred_z_phot = model.eval_estimators_predictions(ml_dataset.features)
 
-    for trial in xrange(trials):
+    for trial in range(trials):
 
 
         tbhdu.data['z_phot_values'][:,trial]=pred_z_phot[:,trial]
 
-    for entry in xrange(pred_z_phot.shape[0]):
+    for entry in range(pred_z_phot.shape[0]):
         z_grid, gmm_pdf = eval_pdf_gmm(z_values=pred_z_phot[entry],grid_size=pdf_grid_size,n_components=gmm_components)
         tbhdu.data['z_phot_pdf_grid'][entry] = z_grid
         tbhdu.data['z_phot_pdf'][entry] = gmm_pdf

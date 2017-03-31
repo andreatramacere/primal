@@ -164,7 +164,7 @@ class BaseModel(object):
         if hasattr(self.clf, 'estimators_'):
             _preds = np.zeros((features.shape[0],len(self.clf.estimators_)))
 
-        for i in xrange(len(self.clf.estimators_)):
+        for i in range(len(self.clf.estimators_)):
             _preds[:,i]=self.clf.estimators_[i].predict(features)
 
         return _preds

@@ -62,7 +62,7 @@ def eval_crps(z_values,z_true):
 
 
 def eval_pdf_gmm(z_values,n_components=2,grid_size=100):
-    models=[GaussianMixture(n_components=n).fit(z_values.reshape(z_values.size,1)) for n in xrange(1,n_components+1)]
+    models=[GaussianMixture(n_components=n).fit(z_values.reshape(z_values.size,1)) for n in range(1,n_components+1)]
 
     BICs = [m.bic(z_values.reshape(z_values.size,1)) for m in models]
 

@@ -141,7 +141,7 @@ def dataset_train_test_split(dataset,train_ratio=None,stratify=True,random_state
     else:
         gen = ShuffleSplit(n_splits=1,test_size=1.0-train_ratio,random_state=random_state).split(dataset.features)
 
-    train_IDs, test_IDs=gen.next()
+    train_IDs, test_IDs=next(gen)
     train_dataset=new_from_rows(dataset,train_IDs)
     test_dataset=new_from_rows(dataset,test_IDs)
 
@@ -197,7 +197,7 @@ def drop_bad_values(dataset, bad_value):
 
     # removes a row if any of the entry in the row is == bad_value
     masked = np.zeros(dataset.features_N_rows, dtype=np.bool)
-    for ID in xrange(dataset.features_N_rows):
+    for ID in range(dataset.features_N_rows):
         masked[ID] = np.any(dataset.features[ID] == bad_value)
     print(dataset.features[masked])
     keep_rows(dataset, ~masked)
@@ -242,7 +242,7 @@ def drop_nan_inf(dataset):
 
     # removes a row if any of the entry in the row is inf or nan
     masked = np.zeros(dataset.features_N_rows, dtype=np.bool)
-    for ID in xrange(dataset.features.shape[0]):
+    for ID in range(dataset.features.shape[0]):
         masked[ID] = np.any(np.isinf(dataset.features[ID])) or np.any(np.isnan(dataset.features[ID]))
     keep_rows(dataset,~masked)
     print("|removed rows", np.sum(masked))
