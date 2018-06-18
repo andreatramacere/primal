@@ -8,4 +8,4 @@ find_package(ElementsProject)
 
 # Declare project name and version
 
-elements_project(Primal 1.2 DESCRIPTION "Lensy Strong Device" USE Elements 5.2.2)
+elements_project(Primal 1.3 DESCRIPTION "Lensy Strong Device" USE Elements 5.2.2)
