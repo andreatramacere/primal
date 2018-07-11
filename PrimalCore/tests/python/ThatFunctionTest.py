@@ -7,7 +7,7 @@ class TableTestCase(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        ph_catalog = getPathFromEnvVariable('PrimalCore/euclid_cosmos_DC2_S2_v2.1_valid.fits', 'ELEMENTS_AUX_PATH')
+        ph_catalog = getPathFromEnvVariable('PrimalCore/test_table.fits', 'ELEMENTS_AUX_PATH')
         self.catalog=Table.from_fits_file(ph_catalog,fits_ext=1)
 
 
