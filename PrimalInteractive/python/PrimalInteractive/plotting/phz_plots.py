@@ -27,7 +27,6 @@ __author__ = "Andrea Tramacere"
 # absolute import eg: import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
-import decorator
 # Project
 # relative import eg: from .mod import f
 from PrimalCore.phz_tools.stats import eval_z_pred_stats
