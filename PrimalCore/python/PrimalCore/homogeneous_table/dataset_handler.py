@@ -39,7 +39,7 @@ from builtins import (bytes, str, open, super, range,
 # eg numpy 
 # absolute import eg: import numpy as np
 import numpy as np
-import decorator
+from scipy._lib import decorator
 import copy
 
 # Project
