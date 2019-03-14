@@ -203,7 +203,7 @@ def pdf(model,test,saveplot=False,plot=False,skip_gmm=False,flag=None,out_flag=N
     _name = model.name
     if out_flag is not None:
         _name = '%s' % out_flag + '_' + _name
-    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (_name),skip_gmm=skip_gmm)
+    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (_name,flag),skip_gmm=skip_gmm)
     pit = eval_pit(pdf_array['z_phot_values'], pdf_array['z_spec'])
     pit_plot = plot_PIT_histogram(pit, plot=plot)
 
