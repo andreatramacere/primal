@@ -131,14 +131,14 @@ class Regressor(BaseModel):
         """
         n_estimators_range = np.arange(50, 500, 50)
         param_grid = {'n_estimators': n_estimators_range}
-        clf=GradientBoostingRegressor(n_estimators=n_estimators,
+
+        return cls(GradientBoostingRegressor(n_estimators=n_estimators,
                                              learning_rate=learning_rate,
                                              loss='huber',
                                              alpha=0.01,
                                              subsample=0.8,
                                              min_samples_leaf=10,
-                                             min_samples_split=10),
-        return cls(clf,par_grid_dict=param_grid,name=name)
+                                             min_samples_split=10),par_grid_dict=param_grid,name=name)
 
     @classmethod
     def ABRegressor(cls, n_estimators=100,name='ada_boost'):

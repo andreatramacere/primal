@@ -36,7 +36,7 @@ __author__ = "Andrea Tramacere"
 # eg numpy 
 # absolute import eg: import numpy as np
 import  numpy as np
-
+from sklearn.ensemble import GradientBoostingRegressor
 # Project
 # relative import eg: from .mod import f
 from ..homogeneous_table.dataset_handler import check_dataset_decorate
@@ -164,8 +164,12 @@ class BaseModel(object):
         if hasattr(self.clf, 'estimators_'):
             _preds = np.zeros((features.shape[0],len(self.clf.estimators_)))
 
-        for i in range(len(self.clf.estimators_)):
-            _preds[:,i]=self.clf.estimators_[i].predict(features)
+        if isinstance(self.clf,GradientBoostingRegressor):
+            for i in range(len(self.clf.estimators_.reshape(-1))):
+              _preds[:,i]=self.clf.estimators_.reshape(-1)[i].predict(features)
+        else:
+            for i in range(len(self.clf.estimators_)):
+              _preds[:,i]=self.clf.estimators_[i].predict(features)
 
         return _preds
 

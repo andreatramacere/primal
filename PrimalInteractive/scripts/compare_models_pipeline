@@ -135,7 +135,7 @@ def build_models(use_models_list=None):
 
 
 
-def feature_selection_results(model,train,support,n_features, scores,plot=False,saveplot=False):
+def feature_selection_results(model,train,support,n_features, scores,plot=False,saveplot=False,flag=None):
     """
     Evaluate the features importance for the model, (makes/saves plots)
 
@@ -153,6 +153,10 @@ def feature_selection_results(model,train,support,n_features, scores,plot=False,
     -------
 
     """
+    _name=model.name
+    if flag is not None:
+        _name = '%s' % flag + '_' + _name
+
     print ("selected features",n_features,np.array(train.features_names)[support])
     feat_imp = model.feature_importances(feature_names=np.array(train.features_names)[support])
     if feat_imp is not None:
@@ -160,8 +164,8 @@ def feature_selection_results(model,train,support,n_features, scores,plot=False,
             p = plot_features_imp(feat_imp['score'], feature_names=feat_imp['name'], plot=plot)
             p1 = plot_feature_imp_trend(scores,plot=plot)
         if saveplot==True:
-            p.save_plot('feat_imp_post_selection_%s.pdf' % (model.name))
-            p1.save_plot('feat_imp_post_selection_trend_%s.pdf' % (model.name))
+            p.save_plot('%s_feat_imp_post_selection.pdf' % (_name))
+            p1.save_plot('%s_feat_imp_post_selection_trend.pdf' % (_name))
 
 
 def single_regression(model,train,test,saveplot=False,plot=False,title='single_regression'):
@@ -194,23 +198,29 @@ def single_regression(model,train,test,saveplot=False,plot=False,title='single_r
 
 
 
-def pdf(model,test,flag=None,saveplot=False,plot=False,skip_gmm=False):
+def pdf(model,test,saveplot=False,plot=False,skip_gmm=False,flag=None,out_flag=None):
     print('start pdf')
-    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (model.name,flag),skip_gmm=skip_gmm)
+    _name = model.name
+    if out_flag is not None:
+        _name = '%s' % out_flag + '_' + _name
+    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (_name),skip_gmm=skip_gmm)
     pit = eval_pit(pdf_array['z_phot_values'], pdf_array['z_spec'])
     pit_plot = plot_PIT_histogram(pit, plot=plot)
+
+
+
     if saveplot == True:
-        pit_plot.save_plot('%s_PIT_%s.pdf' % (model.name,flag))
+        pit_plot.save_plot('%s_PIT_%s.pdf' % (_name,flag))
 
     cprs = eval_crps(pdf_array['z_phot_values'],pdf_array['z_spec'])
     cprs_plot = plot_CRPS_histogram(cprs, plot=plot)
     if saveplot == True:
-        cprs_plot.save_plot('%s_CPRS_%s.pdf' % (model.name,flag))
+        cprs_plot.save_plot('%s_CPRS_%s.pdf' % (_name,flag))
     print('pdf done')
 
 
 
-def model_validation(model,train,saveplot=False,plot=False,scoring=None):
+def model_validation(model,train,saveplot=False,plot=False,scoring=None,flag=None):
     """
     Sklearn based model validation
 
@@ -228,6 +238,9 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None):
     """
     train_sizes, train_scores, test_scores=model_learning_curve(model,train,scoring=scoring)
 
+    _name = model.name
+    if flag is not None:
+        _name = '%s' % flag + '_' + _name
 
     if model.name in ['ada_boost', 'random_forest', 'gradient_boosting']:
 
@@ -250,7 +263,7 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None):
 
 
     if saveplot == True:
-        p_lc.save_plot('learning_curve_%s.pdf' % (model.name))
+        p_lc.save_plot('%s_learning_curve.pdf' % (_name))
 
 
     train_scores, test_scores=model_validation_curve(model,param_range,param_name,train,scoring=scoring)
@@ -260,7 +273,7 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None):
         p_vc = plot_validation_curve(train_scores, test_scores,param_range,param_name,'outliers', plot=plot)
 
     if saveplot == True:
-        p_vc.save_plot('validation_curve_%s.pdf' % (model.name))
+        p_vc.save_plot('%s_validation_curve.pdf' % (_name))
 
 
 def run(input_fits_file,
@@ -274,6 +287,7 @@ def run(input_fits_file,
         saveplot=False,
         out_flag=None,
         skip_gmm=False):
+
 
 
     ml_dataset=load_preproc_catalog(input_fits_file,
@@ -291,18 +305,23 @@ def run(input_fits_file,
 
 
     for model in model_list:
+        _name=model.name
+
+        if out_flag is not None:
+            _name='%s'%out_flag+'_'+_name
+
         p = pipeline_stratified_kfold_cv(model, scorer=outliers_score)
 
 
         #one shot no pipeline
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot,
-                          title='%s_single_regression_test_results_pre_opt' % model.name)
+                          title='%s_single_regression_test_results_pre_opt' %_name)
 
 
-        model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (model.name), test)
+        model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (_name), test)
 
 
-        pdf(p.model,test,flag='pre_opt',saveplot=saveplot,skip_gmm=skip_gmm)
+        pdf(p.model,test,flag='pre_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
 
 
 
@@ -316,17 +335,18 @@ def run(input_fits_file,
         scores=p.sk_pipeline.named_steps['rfecv'].grid_scores_
 
         #plot rfecv results
-        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot)
+        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
 
         #eval model validation for the trained pipeline model
-        model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score)
+        model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score,flag=out_flag)
 
         #gets final performance for trained pipeline model
-        single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % model.name)
+        single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
 
-        pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm)
 
-        model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (model.name), test)
+        pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
+
+        model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (_name), test)
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
