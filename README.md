@@ -1,4 +1,5 @@
-# primal
+![img](./doc/sphinx_themes/primal_theme/static/logo.png)
+
 
 ## installation
 If you use Anaconda:
