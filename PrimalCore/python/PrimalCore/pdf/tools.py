@@ -40,7 +40,7 @@ from .stats import eval_pdf_gmm
 from ..io.fits import write_data
 
 
-def extract_pdf(model,ml_dataset,z_phot=None,pdf_grid_size=100,gmm_components=2,out_file_name=None):
+def extract_pdf(model,ml_dataset,z_phot=None,pdf_grid_size=100,gmm_components=2,out_file_name=None,skip_gmm=False):
 
     """
 
@@ -88,10 +88,11 @@ def extract_pdf(model,ml_dataset,z_phot=None,pdf_grid_size=100,gmm_components=2,
 
         tbhdu.data['z_phot_values'][:,trial]=pred_z_phot[:,trial]
 
-    for entry in range(pred_z_phot.shape[0]):
-        z_grid, gmm_pdf = eval_pdf_gmm(z_values=pred_z_phot[entry],grid_size=pdf_grid_size,n_components=gmm_components)
-        tbhdu.data['z_phot_pdf_grid'][entry] = z_grid
-        tbhdu.data['z_phot_pdf'][entry] = gmm_pdf
+    if skip_gmm is False:
+        for entry in range(pred_z_phot.shape[0]):
+            z_grid, gmm_pdf = eval_pdf_gmm(z_values=pred_z_phot[entry],grid_size=pdf_grid_size,n_components=gmm_components)
+            tbhdu.data['z_phot_pdf_grid'][entry] = z_grid
+            tbhdu.data['z_phot_pdf'][entry] = gmm_pdf
 
     if out_file_name is not None:
         header_tuple_list = [('cat_file', ml_dataset.catalog_file, 'catalog file')]

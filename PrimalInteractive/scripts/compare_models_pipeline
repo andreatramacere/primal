@@ -194,9 +194,9 @@ def single_regression(model,train,test,saveplot=False,plot=False,title='single_r
 
 
 
-def pdf(model,test,flag=None,saveplot=False,plot=False):
+def pdf(model,test,flag=None,saveplot=False,plot=False,skip_gmm=False):
     print('start pdf')
-    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (model.name,flag))
+    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (model.name,flag),skip_gmm=skip_gmm)
     pit = eval_pit(pdf_array['z_phot_values'], pdf_array['z_spec'])
     pit_plot = plot_PIT_histogram(pit, plot=plot)
     if saveplot == True:
@@ -272,7 +272,8 @@ def run(input_fits_file,
         train_test_split_ratio=0.1,
         plot=False,
         saveplot=False,
-        out_flag=None):
+        out_flag=None,
+        skip_gmm=False):
 
 
     ml_dataset=load_preproc_catalog(input_fits_file,
@@ -301,7 +302,7 @@ def run(input_fits_file,
         model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (model.name), test)
 
 
-        pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
+        pdf(p.model,test,flag='pre_opt',saveplot=saveplot,skip_gmm=skip_gmm)
 
 
 
@@ -323,7 +324,7 @@ def run(input_fits_file,
         #gets final performance for trained pipeline model
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % model.name)
 
-        pdf(p.model, test,flag='post_opt',saveplot=saveplot)
+        pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm)
 
         model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (model.name), test)
 
@@ -338,7 +339,7 @@ def main(argv=None):
     parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
     parser.add_argument('-use_models_list', type=str, default=['ada_boost'],nargs='+')
     parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
-    parser.add_argument('-skip', action='store_true')
+    parser.add_argument('-skip_gmm', action='store_true')
     parser.add_argument('-plot',action='store_true')
     parser.add_argument('-saveplot',action='store_true')
     parser.add_argument('-out_flag',type=str, default=None)
@@ -356,7 +357,8 @@ def main(argv=None):
         train_test_split_ratio=args.train_test_split_ratio,
         plot=args.plot,
         saveplot=args.saveplot,
-        out_flag=args.out_flag)
+        out_flag=args.out_flag,
+        skip_gmm=args.skip_gmm)
 
 
 

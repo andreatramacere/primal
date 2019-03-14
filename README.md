@@ -1,6 +1,6 @@
 ![img](./doc/sphinx_themes/primal_theme/static/logo.png)
 
-
+Author: Andrea Tramacere [mailto@google](andrea.tramacere@gmail.com) [mailto@unige](andrea.tramacere@unige.ch) 
 ## installation
 If you use Anaconda:
      
