@@ -1,0 +1,5 @@
+cd to /Users/orion/Work/Projects/Primal/PrimalCore/python
+
+pyreverse -p homogeneous_table -o png PrimalCore/homogeneous_table
+pyreverse -p heterogeneous_table -o png PrimalCore/heterogeneous_table
+

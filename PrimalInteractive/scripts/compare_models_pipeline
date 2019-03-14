@@ -1,0 +1,364 @@
+#!/usr/bin/env python
+
+
+
+
+from __future__ import absolute_import, division, print_function
+
+from builtins import (bytes, str, open, super, range,
+                      zip, round, input, int, pow, object, map, zip)
+
+__author__ = "Andrea Tramacere"
+
+# Standard library
+# eg copy
+# absolute import rg:from copy import deepcopy
+
+# Dependencies
+# eg numpy 
+# absolute import eg: import numpy as np
+import  argparse
+
+# Project
+# relative import eg: from .mod import f
+
+
+
+from PrimalCore.model_selection.model_validation import   model_learning_curve,model_validation_curve
+from PrimalCore.heterogeneous_table.table import    Table
+from PrimalCore.homogeneous_table.dataset_handler    import *
+from PrimalInteractive.plotting.phz_plots import  *
+
+from PrimalCore.phz_tools.photometry import FluxRatio
+from PrimalCore.models.regression import Regressor
+from PrimalCore.preprocessing.dataset_preprocessing import *
+from PrimalCore.phz_tools.stats import outliers_score
+from PrimalCore.models.pipeline import pipeline_stratified_kfold_cv
+from PrimalCore.pdf.stats import eval_pit,eval_pdf_gmm,eval_crps
+from PrimalCore.pdf.tools import extract_pdf
+import  numpy as np
+
+
+def load_preproc_catalog(ph_catalog,target_col_name,cat_col_name_reg_ex=None,fits_file_ext=0):
+    """
+    Catalog loading
+
+    Parameters
+    ----------
+    ph_catalog
+    target_col_name
+    cat_col_name_reg_ex
+    fits_file_ext
+
+    Returns
+    -------
+
+    """
+    catalog=Table.from_fits_file(ph_catalog,fits_ext=fits_file_ext)
+
+    if cat_col_name_reg_ex is not None:
+        catalog.keep_columns(cat_col_name_reg_ex,regex=True)
+
+
+    CLEAN= (catalog.data['FLAG_PHOT']==0)*(catalog.data['MASKED']==0)*(catalog.data['STAR']==0)
+    CLEAN*=(catalog.data['AGN']==0)*(catalog.data['reliable_S15']==1)
+    catalog.keep_rows(CLEAN)
+
+
+    dataset=MLDataSet.new_from_table(catalog,target_col_name=target_col_name,target_bins=20,target_binning='log',catalog_file=ph_catalog)
+    return dataset
+
+def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify=True):
+    """
+    Preprocessing of the dataset with evaluation of flux ratios
+
+    Parameters
+    ----------
+    dataset
+    feat_col_name_reg_ex
+    train_ratio
+    stratify
+
+    Returns
+    -------
+
+    """
+    flux_bands_list_2 = ['FLUX_G_2', 'FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_VIS', 'FLUX_VIS',
+                         'FLUX_VIS']
+    flux_bands_list_1 = ['FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_H_2', 'FLUX_Y_2', 'FLUX_J_2',
+                         'FLUX_H_2']
+
+    # This was input cell with execution count: 37
+    for f1, f2 in zip(flux_bands_list_1, flux_bands_list_2):
+        f1_name = f1.split('_')[1]
+        f2_name = f2.split('_')[1]
+        if f1 in dataset.features_names and f2 in dataset.features_names:
+            f = FluxRatio('F_RATIO_%s' % (f2_name + '-' + f1_name), f1, f2, features=dataset)
+            add_features(dataset,f.name, f.values)
+
+
+    # This was input cell with execution count: 11
+    if feat_col_name_reg_ex is not None:
+        keep_features(dataset, feat_col_name_reg_ex, regex=True)
+
+
+    train,test=dataset_train_test_split(dataset,train_ratio=train_ratio,stratify=stratify)
+
+
+    return  train,test
+
+
+def build_models(use_models_list=None):
+    """
+    builds a list of models
+
+    Parameters
+    ----------
+    use_models_list
+
+    Returns
+    -------
+
+    """
+    models_list=[]
+    models_list.append(Regressor.ABRegressor(n_estimators=100,name='ada_boost'))
+    models_list.append(Regressor.KNRegressor(name='KN'))
+    models_list.append(Regressor.RFRegressor(n_estimators=100,name='random_forest'))
+    models_list.append(Regressor.GBRegressor(n_estimators=100,name='gradient_boosting'))
+    if use_models_list is not None:
+        for model in models_list[:]:
+            if model.name not in use_models_list:
+                models_list.remove(model)
+
+    print (models_list)
+    return models_list
+
+
+
+def feature_selection_results(model,train,support,n_features, scores,plot=False,saveplot=False):
+    """
+    Evaluate the features importance for the model, (makes/saves plots)
+
+    Parameters
+    ----------
+    model
+    train
+    support
+    n_features
+    scores
+    plot
+    saveplot
+
+    Returns
+    -------
+
+    """
+    print ("selected features",n_features,np.array(train.features_names)[support])
+    feat_imp = model.feature_importances(feature_names=np.array(train.features_names)[support])
+    if feat_imp is not None:
+        if saveplot == True or plot == True:
+            p = plot_features_imp(feat_imp['score'], feature_names=feat_imp['name'], plot=plot)
+            p1 = plot_feature_imp_trend(scores,plot=plot)
+        if saveplot==True:
+            p.save_plot('feat_imp_post_selection_%s.pdf' % (model.name))
+            p1.save_plot('feat_imp_post_selection_trend_%s.pdf' % (model.name))
+
+
+def single_regression(model,train,test,saveplot=False,plot=False,title='single_regression'):
+    """
+    Test set results for a single regression  (makes/saves plots)
+
+    Parameters
+    ----------
+    model
+    train
+    test
+    saveplot
+    plot
+    title
+
+    Returns
+    -------
+
+    """
+
+    model.clf.fit(train.features, train.target_array)
+    z_spec = test.target_array
+    z_phot = model.clf.predict(test.features)
+
+    if saveplot == True or plot==True:
+        p = plot_z_spec_vs_z_phot(z_spec, z_phot, plot=plot)
+
+    if saveplot == True:
+        p.save_plot('%s.pdf'%(title))
+
+
+
+def pdf(model,test,flag=None,saveplot=False,plot=False):
+    print('start pdf')
+    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (model.name,flag))
+    pit = eval_pit(pdf_array['z_phot_values'], pdf_array['z_spec'])
+    pit_plot = plot_PIT_histogram(pit, plot=plot)
+    if saveplot == True:
+        pit_plot.save_plot('%s_PIT_%s.pdf' % (model.name,flag))
+
+    cprs = eval_crps(pdf_array['z_phot_values'],pdf_array['z_spec'])
+    cprs_plot = plot_CRPS_histogram(cprs, plot=plot)
+    if saveplot == True:
+        cprs_plot.save_plot('%s_CPRS_%s.pdf' % (model.name,flag))
+    print('pdf done')
+
+
+
+def model_validation(model,train,saveplot=False,plot=False,scoring=None):
+    """
+    Sklearn based model validation
+
+    Parameters
+    ----------
+    model
+    train
+    saveplot
+    plot
+    scoring
+
+    Returns
+    -------
+
+    """
+    train_sizes, train_scores, test_scores=model_learning_curve(model,train,scoring=scoring)
+
+
+    if model.name in ['ada_boost', 'random_forest', 'gradient_boosting']:
+
+        param_name = 'n_estimators'
+        param_range = np.linspace(1, 500, 5).astype(np.int32)
+
+    elif model.name == 'SVR':
+        param_name = 'gamma'
+        param_range = np.logspace(-6, -1, 10)
+
+    elif model.name == 'KNeighborsRegressor':
+        param_name = 'n_neighbors'
+        param_range = np.linspace(1, 10, 5).astype(np.int32)
+
+    else:
+        raise RuntimeError("model %s  not supported" % model.name)
+
+    if saveplot == True or plot == True:
+        p_lc =plot_learning_curve(train_sizes, train_scores, test_scores,plot=plot)
+
+
+    if saveplot == True:
+        p_lc.save_plot('learning_curve_%s.pdf' % (model.name))
+
+
+    train_scores, test_scores=model_validation_curve(model,param_range,param_name,train,scoring=scoring)
+
+
+    if saveplot == True or plot == True:
+        p_vc = plot_validation_curve(train_scores, test_scores,param_range,param_name,'outliers', plot=plot)
+
+    if saveplot == True:
+        p_vc.save_plot('validation_curve_%s.pdf' % (model.name))
+
+
+def run(input_fits_file,
+        fits_file_ext,
+        target_column_name,
+        cat_col_name_reg_ex,
+        feat_col_name_reg_ex,
+        use_models_list=[],
+        train_test_split_ratio=0.1,
+        plot=False,
+        saveplot=False,
+        out_flag=None):
+
+
+    ml_dataset=load_preproc_catalog(input_fits_file,
+                                    target_col_name=target_column_name,
+                                    cat_col_name_reg_ex=cat_col_name_reg_ex,
+                                    fits_file_ext=fits_file_ext)
+
+
+    train,test=preproc_mldataset(ml_dataset,
+                                 train_ratio=train_test_split_ratio,
+                                 feat_col_name_reg_ex=feat_col_name_reg_ex)
+
+    model_list=build_models(use_models_list)
+
+
+
+    for model in model_list:
+        p = pipeline_stratified_kfold_cv(model, scorer=outliers_score)
+
+
+        #one shot no pipeline
+        single_regression(p.model, train, test, saveplot=saveplot, plot=plot,
+                          title='%s_single_regression_test_results_pre_opt' % model.name)
+
+
+        model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (model.name), test)
+
+
+        #pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
+
+
+
+        #This run the full pipeline
+        p.fit(train.features,train.target_array)
+
+
+        #gets results form rfecv in pipeline
+        support=p.sk_pipeline.named_steps['rfecv'].support_
+        n_features=p.sk_pipeline.named_steps['rfecv'].n_features_
+        scores=p.sk_pipeline.named_steps['rfecv'].grid_scores_
+
+        #plot rfecv results
+        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot)
+
+        #eval model validation for the trained pipeline model
+        model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score)
+
+        #gets final performance for trained pipeline model
+        single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % model.name)
+
+        #pdf(p.model, test,flag='post_opt',saveplot=saveplot)
+
+        model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (model.name), test)
+
+def main(argv=None):
+    parser = argparse.ArgumentParser()
+
+
+    parser.add_argument('input_fits_file', type=str, default=None )
+    parser.add_argument('fits_file_ext', type=int, default=0 )
+    parser.add_argument('target_column_name', type=str, default='z_spec_S15' )
+    parser.add_argument('-cat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX_VIS','reliable_S15','STAR','AGN','MASKED','FLAG_PHOT','z_spec_S15'])
+    parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
+    parser.add_argument('-use_models_list', type=str, default=['ada_boost'],nargs='+')
+    parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
+    parser.add_argument('-skip', action='store_true')
+    parser.add_argument('-plot',action='store_true')
+    parser.add_argument('-saveplot',action='store_true')
+    parser.add_argument('-out_flag',type=str, default=None)
+
+    args = parser.parse_args()
+
+    print(args)
+
+    run(args.input_fits_file,
+        args.fits_file_ext,
+        args.target_column_name,
+        args.cat_col_name_reg_ex,
+        args.feat_col_name_reg_ex,
+        use_models_list=args.use_models_list,
+        train_test_split_ratio=args.train_test_split_ratio,
+        plot=args.plot,
+        saveplot=args.saveplot,
+        out_flag=args.out_flag)
+
+
+
+if  __name__ == "__main__":
+    main()
