@@ -301,7 +301,7 @@ def run(input_fits_file,
         model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (model.name), test)
 
 
-        #pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
+        pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
 
 
 
@@ -323,7 +323,7 @@ def run(input_fits_file,
         #gets final performance for trained pipeline model
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % model.name)
 
-        #pdf(p.model, test,flag='post_opt',saveplot=saveplot)
+        pdf(p.model, test,flag='post_opt',saveplot=saveplot)
 
         model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (model.name), test)
 
