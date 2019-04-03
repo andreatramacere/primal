@@ -393,8 +393,6 @@ def train_and_predict(model_list,
         clf = clone(model.clf)
         model.clf=clf
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
-
-
         pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
 
         model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (_name), test)

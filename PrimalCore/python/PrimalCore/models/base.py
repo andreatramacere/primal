@@ -91,8 +91,6 @@ class BaseModel(object):
             file_name=self.name+'.plk'
 
         joblib.dump(self, file_name)
-        if _t is not None:
-            setattr(self,'outliers_score',_t)
 
     @staticmethod
     def load(file_name):
