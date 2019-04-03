@@ -336,7 +336,7 @@ def predict_trained(test,
 
     single_regression(model, None, test, saveplot=saveplot, plot=plot,
                       title='%s_single_regression_from_saved' % _name,fit=False)
-    model.save_mldataset_predictions('%s_single_regression_test_results_from_saved.fits' % (_name), test)
+    model.save_mldataset_predictions('%s_single_regression_results_from_saved.fits' % (_name), test)
     pdf(model, test, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
 
 
