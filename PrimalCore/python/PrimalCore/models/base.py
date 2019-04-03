@@ -41,8 +41,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 # relative import eg: from .mod import f
 from ..homogeneous_table.dataset_handler import check_dataset_decorate
 from ..io.fits import write_data
-
-
+from sklearn.externals import joblib
+import pickle
 class WrappedModel(object):
 
     def __init__(self,name):
@@ -83,6 +83,22 @@ class BaseModel(object):
         self.par_grid_dict = par_grid_dict
         self.score=add_scorer
         self.name=name
+
+
+    def save(self,file_name=None):
+        _t=None
+        if file_name is None:
+            file_name=self.name+'.plk'
+
+        joblib.dump(self, file_name)
+        if _t is not None:
+            setattr(self,'outliers_score',_t)
+
+    @staticmethod
+    def load(file_name):
+        return joblib.load(file_name)
+
+
 
     @classmethod
     def from_non_sklearn(cls,model_to_wrap,model_bridge_dictionary, par_grid_dict=None,name=None):

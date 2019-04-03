@@ -21,7 +21,7 @@ import  argparse
 
 # Project
 # relative import eg: from .mod import f
-
+from sklearn.base import clone
 
 
 from PrimalCore.model_selection.model_validation import   model_learning_curve,model_validation_curve
@@ -31,11 +31,14 @@ from PrimalInteractive.plotting.phz_plots import  *
 
 from PrimalCore.phz_tools.photometry import FluxRatio
 from PrimalCore.models.regression import Regressor
+from sklearn.ensemble import GradientBoostingRegressor,RandomForestRegressor,AdaBoostRegressor
+from PrimalCore.models.base import  BaseModel
 from PrimalCore.preprocessing.dataset_preprocessing import *
 from PrimalCore.phz_tools.stats import outliers_score
 from PrimalCore.models.pipeline import pipeline_stratified_kfold_cv
 from PrimalCore.pdf.stats import eval_pit,eval_pdf_gmm,eval_crps
 from PrimalCore.pdf.tools import extract_pdf
+from PrimalCore.models.base import BaseModel
 import  numpy as np
 
 
@@ -68,7 +71,7 @@ def load_preproc_catalog(ph_catalog,target_col_name,cat_col_name_reg_ex=None,fit
     dataset=MLDataSet.new_from_table(catalog,target_col_name=target_col_name,target_bins=20,target_binning='log',catalog_file=ph_catalog)
     return dataset
 
-def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify=True):
+def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify=True,split=True):
     """
     Preprocessing of the dataset with evaluation of flux ratios
 
@@ -101,12 +104,14 @@ def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify
     if feat_col_name_reg_ex is not None:
         keep_features(dataset, feat_col_name_reg_ex, regex=True)
 
+    if split==True:
+        train,test=dataset_train_test_split(dataset,train_ratio=train_ratio,stratify=stratify)
 
-    train,test=dataset_train_test_split(dataset,train_ratio=train_ratio,stratify=stratify)
-
+    else:
+        train=None
+        test=dataset
 
     return  train,test
-
 
 def build_models(use_models_list=None):
     """
@@ -168,7 +173,7 @@ def feature_selection_results(model,train,support,n_features, scores,plot=False,
             p1.save_plot('%s_feat_imp_post_selection_trend.pdf' % (_name))
 
 
-def single_regression(model,train,test,saveplot=False,plot=False,title='single_regression'):
+def single_regression(model,train,test,saveplot=False,plot=False,title='single_regression',fit=True):
     """
     Test set results for a single regression  (makes/saves plots)
 
@@ -185,8 +190,9 @@ def single_regression(model,train,test,saveplot=False,plot=False,title='single_r
     -------
 
     """
+    if fit==True:
+        model.clf.fit(train.features, train.target_array)
 
-    model.clf.fit(train.features, train.target_array)
     z_spec = test.target_array
     z_phot = model.clf.predict(test.features)
 
@@ -286,29 +292,71 @@ def run(input_fits_file,
         plot=False,
         saveplot=False,
         out_flag=None,
-        skip_gmm=False):
+        skip_gmm=False,
+        savemodel=False,
+        loadmodel=False):
 
 
+    if loadmodel is not None:
+        split=False
+        model = BaseModel.load(loadmodel)
+    else:
+        split=True
+        model_list = build_models(use_models_list)
 
-    ml_dataset=load_preproc_catalog(input_fits_file,
-                                    target_col_name=target_column_name,
-                                    cat_col_name_reg_ex=cat_col_name_reg_ex,
-                                    fits_file_ext=fits_file_ext)
+    ml_dataset = load_preproc_catalog(input_fits_file,
+                                      target_col_name=target_column_name,
+                                      cat_col_name_reg_ex=cat_col_name_reg_ex,
+                                      fits_file_ext=fits_file_ext)
 
 
-    train,test=preproc_mldataset(ml_dataset,
-                                 train_ratio=train_test_split_ratio,
-                                 feat_col_name_reg_ex=feat_col_name_reg_ex)
-
-    model_list=build_models(use_models_list)
+    train, test = preproc_mldataset(ml_dataset,
+                                    train_ratio=train_test_split_ratio,
+                                    feat_col_name_reg_ex=feat_col_name_reg_ex,split=split)
 
 
+    if loadmodel is None:
+        train_and_predict(model_list,train,test,plot=plot,saveplot=saveplot,out_flag=out_flag,skip_gmm=skip_gmm,savemodel=savemodel)
+    else:
+        predict_trained(test,model,saveplot=saveplot,skip_gmm=skip_gmm,plot=plot)
+
+
+def predict_trained(test,
+                    model,
+                    plot=False,
+                    out_flag=None,
+                    saveplot=False,
+                    skip_gmm=False):
+
+    _name = model.name
+
+    if out_flag is not None:
+        _name = '%s' % out_flag + '_' + _name
+
+
+    single_regression(model, None, test, saveplot=saveplot, plot=plot,
+                      title='%s_single_regression_from_saved' % _name,fit=False)
+    model.save_mldataset_predictions('%s_single_regression_test_results_from_saved.fits' % (_name), test)
+    pdf(model, test, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
+
+
+def train_and_predict(model_list,
+                      train,
+                      test,
+                      plot=False,
+                      saveplot=False,
+                      out_flag=None,
+                      skip_gmm=False,
+                      savemodel=False):
 
     for model in model_list:
         _name=model.name
 
         if out_flag is not None:
             _name='%s'%out_flag+'_'+_name
+
+
+
 
         p = pipeline_stratified_kfold_cv(model, scorer=outliers_score)
 
@@ -341,12 +389,18 @@ def run(input_fits_file,
         model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score,flag=out_flag)
 
         #gets final performance for trained pipeline model
+
+        clf = clone(model.clf)
+        model.clf=clf
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
 
 
         pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
 
         model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (_name), test)
+        if savemodel==True:
+
+           model.save(file_name=model.name+'_trained.pkl')
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
@@ -361,6 +415,8 @@ def main(argv=None):
     parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
     parser.add_argument('-skip_gmm', action='store_true')
     parser.add_argument('-plot',action='store_true')
+    parser.add_argument('-save_model', action='store_true')
+    parser.add_argument('-load_model', type=str, default=None)
     parser.add_argument('-saveplot',action='store_true')
     parser.add_argument('-out_flag',type=str, default=None)
 
@@ -378,7 +434,9 @@ def main(argv=None):
         plot=args.plot,
         saveplot=args.saveplot,
         out_flag=args.out_flag,
-        skip_gmm=args.skip_gmm)
+        skip_gmm=args.skip_gmm,
+        savemodel=args.save_model,
+        loadmodel=args.load_model)
 
 
 
