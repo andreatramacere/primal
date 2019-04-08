@@ -203,13 +203,28 @@ def single_regression(model,train,test,saveplot=False,plot=False,title='single_r
         p.save_plot('%s.pdf'%(title))
 
 
+def pdf(model,
+        test,
+        pdf_grid_size,
+        pdf_grid_min,
+        pdf_grid_max,
+        saveplot=False,
+        plot=False,
+        skip_gmm=False,
+        flag=None,
+        out_flag=None):
 
-def pdf(model,test,saveplot=False,plot=False,skip_gmm=False,flag=None,out_flag=None):
     print('start pdf')
     _name = model.name
     if out_flag is not None:
         _name = '%s' % out_flag + '_' + _name
-    pdf_array = extract_pdf(model, test, out_file_name='%s_pdf_%s.fits' % (_name,flag),skip_gmm=skip_gmm)
+
+    pdf_array = extract_pdf(model,
+                            test,
+                            pdf_grid_size=pdf_grid_size,
+                            pdf_grid_min=pdf_grid_min,
+                            pdf_grid_max=pdf_grid_max,
+                            out_file_name='%s_pdf_%s.fits' % (_name,flag),skip_gmm=skip_gmm)
     pit = eval_pit(pdf_array['z_phot_values'], pdf_array['z_spec'])
     pit_plot = plot_PIT_histogram(pit, plot=plot)
 
@@ -282,11 +297,109 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None,flag=Non
         p_vc.save_plot('%s_validation_curve.pdf' % (_name))
 
 
+
+
+def predict_trained(test,
+                    model,
+                    plot=False,
+                    out_flag=None,
+                    saveplot=False,
+                    skip_gmm=False):
+
+    _name = model.name
+
+    if out_flag is not None:
+        _name = '%s' % out_flag + '_' + _name
+
+
+    single_regression(model, None, test, saveplot=saveplot, plot=plot,
+                      title='%s_single_regression_from_saved' % _name,fit=False)
+    model.save_mldataset_predictions('%s_single_regression_results_from_saved.fits' % (_name), test)
+    pdf(model, test, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
+
+
+def train_and_predict(model_list,
+                      train,
+                      test,
+                      pdf_grid_size,
+                      pdf_grid_min,
+                      pdf_grid_max,
+                      plot=False,
+                      saveplot=False,
+                      out_flag=None,
+                      skip_gmm=False,
+                      savemodel=False):
+
+    for model in model_list:
+        _name=model.name
+
+        if out_flag is not None:
+            _name='%s'%out_flag+'_'+_name
+
+        p = pipeline_stratified_kfold_cv(model, scorer=outliers_score)
+
+        # one shot no pipeline
+        single_regression(p.model, train, test, saveplot=saveplot, plot=plot,
+                          title='%s_single_regression_test_results_pre_opt' %_name)
+
+        model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (_name), test)
+
+        pdf(p.model,
+            test,
+            pdf_grid_size,
+            pdf_grid_min,
+            pdf_grid_max,
+            flag='pre_opt',
+            saveplot=saveplot,
+            skip_gmm=skip_gmm,
+            out_flag=out_flag)
+
+
+
+        #T his run the full pipeline
+        p.fit(train.features,train.target_array)
+
+
+        #gets results form rfecv in pipeline
+        support=p.sk_pipeline.named_steps['rfecv'].support_
+        n_features=p.sk_pipeline.named_steps['rfecv'].n_features_
+        scores=p.sk_pipeline.named_steps['rfecv'].grid_scores_
+
+        #plot rfecv results
+        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
+
+        #eval model validation for the trained pipeline model
+        model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score,flag=out_flag)
+
+        #gets final performance for trained pipeline model
+
+        clf = clone(model.clf)
+        model.clf=clf
+        single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
+        pdf(p.model,
+            test,
+            pdf_grid_size,
+            pdf_grid_min,
+            pdf_grid_max,
+            flag='post_opt',
+            saveplot=saveplot,
+            skip_gmm=skip_gmm,
+            out_flag=out_flag)
+
+        model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (_name), test)
+        if savemodel==True:
+
+           model.save(file_name=model.name+'_trained.pkl')
+
+
 def run(input_fits_file,
         fits_file_ext,
         target_column_name,
         cat_col_name_reg_ex,
         feat_col_name_reg_ex,
+        pdf_grid_size,
+        pdf_grid_min,
+        pdf_grid_max,
         use_models_list=[],
         train_test_split_ratio=0.1,
         plot=False,
@@ -316,89 +429,21 @@ def run(input_fits_file,
 
 
     if loadmodel is None:
-        train_and_predict(model_list,train,test,plot=plot,saveplot=saveplot,out_flag=out_flag,skip_gmm=skip_gmm,savemodel=savemodel)
+        train_and_predict(model_list,
+                          train,
+                          test,
+                          pdf_grid_size,
+                          pdf_grid_min,
+                          pdf_grid_max,
+                          plot=plot,
+                          saveplot=saveplot,
+                          out_flag=out_flag,
+                          skip_gmm=skip_gmm,
+                          savemodel=savemodel)
     else:
         predict_trained(test,model,saveplot=saveplot,skip_gmm=skip_gmm,plot=plot)
 
 
-def predict_trained(test,
-                    model,
-                    plot=False,
-                    out_flag=None,
-                    saveplot=False,
-                    skip_gmm=False):
-
-    _name = model.name
-
-    if out_flag is not None:
-        _name = '%s' % out_flag + '_' + _name
-
-
-    single_regression(model, None, test, saveplot=saveplot, plot=plot,
-                      title='%s_single_regression_from_saved' % _name,fit=False)
-    model.save_mldataset_predictions('%s_single_regression_results_from_saved.fits' % (_name), test)
-    pdf(model, test, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
-
-
-def train_and_predict(model_list,
-                      train,
-                      test,
-                      plot=False,
-                      saveplot=False,
-                      out_flag=None,
-                      skip_gmm=False,
-                      savemodel=False):
-
-    for model in model_list:
-        _name=model.name
-
-        if out_flag is not None:
-            _name='%s'%out_flag+'_'+_name
-
-
-
-
-        p = pipeline_stratified_kfold_cv(model, scorer=outliers_score)
-
-
-        #one shot no pipeline
-        single_regression(p.model, train, test, saveplot=saveplot, plot=plot,
-                          title='%s_single_regression_test_results_pre_opt' %_name)
-
-
-        model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (_name), test)
-
-
-        pdf(p.model,test,flag='pre_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
-
-
-
-        #This run the full pipeline
-        p.fit(train.features,train.target_array)
-
-
-        #gets results form rfecv in pipeline
-        support=p.sk_pipeline.named_steps['rfecv'].support_
-        n_features=p.sk_pipeline.named_steps['rfecv'].n_features_
-        scores=p.sk_pipeline.named_steps['rfecv'].grid_scores_
-
-        #plot rfecv results
-        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
-
-        #eval model validation for the trained pipeline model
-        model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score,flag=out_flag)
-
-        #gets final performance for trained pipeline model
-
-        clf = clone(model.clf)
-        model.clf=clf
-        single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
-        pdf(p.model, test,flag='post_opt',saveplot=saveplot,skip_gmm=skip_gmm,out_flag=out_flag)
-
-        model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (_name), test)
-        if savemodel==True:
-
-           model.save(file_name=model.name+'_trained.pkl')
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
@@ -417,6 +462,10 @@ def main(argv=None):
     parser.add_argument('-load_model', type=str, default=None)
     parser.add_argument('-saveplot',action='store_true')
     parser.add_argument('-out_flag',type=str, default=None)
+    parser.add_argument('-pdf_grid_size', type=np.int, default=100)
+    parser.add_argument('-pdf_grid_min', type=np.float, default=None)
+    parser.add_argument('-pdf_grid_max', type=np.float, default=None)
+
 
     args = parser.parse_args()
 
@@ -427,6 +476,9 @@ def main(argv=None):
         args.target_column_name,
         args.cat_col_name_reg_ex,
         args.feat_col_name_reg_ex,
+        args.pdf_grid_size,
+        args.pdf_grid_min,
+        args.pdf_grid_max,
         use_models_list=args.use_models_list,
         train_test_split_ratio=args.train_test_split_ratio,
         plot=args.plot,
