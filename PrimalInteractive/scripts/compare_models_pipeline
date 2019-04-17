@@ -15,7 +15,7 @@ __author__ = "Andrea Tramacere"
 # absolute import rg:from copy import deepcopy
 
 # Dependencies
-# eg numpy 
+# eg numpy
 # absolute import eg: import numpy as np
 import  argparse
 
@@ -301,6 +301,9 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None,flag=Non
 
 def predict_trained(test,
                     model,
+                    pdf_grid_size,
+                    pdf_grid_min,
+                    pdf_grid_max,
                     plot=False,
                     out_flag=None,
                     saveplot=False,
@@ -315,7 +318,7 @@ def predict_trained(test,
     single_regression(model, None, test, saveplot=saveplot, plot=plot,
                       title='%s_single_regression_from_saved' % _name,fit=False)
     model.save_mldataset_predictions('%s_single_regression_results_from_saved.fits' % (_name), test)
-    pdf(model, test, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
+    pdf(model, test, pdf_grid_size, pdf_grid_min, pdf_grid_max, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
 
 
 def train_and_predict(model_list,
@@ -443,7 +446,7 @@ def run(input_fits_file,
                           skip_gmm=skip_gmm,
                           savemodel=savemodel)
     else:
-        predict_trained(test,model,saveplot=saveplot,skip_gmm=skip_gmm,plot=plot)
+        predict_trained(test,model,pdf_grid_size,pdf_grid_min,pdf_grid_max,saveplot=saveplot,skip_gmm=skip_gmm,plot=plot)
 
 
 
