@@ -43,6 +43,7 @@ from ..io.fits import write_data
 def extract_pdf(model,
                 ml_dataset,
                 z_phot=None,
+                randomized_datasets=None,
                 pdf_grid_size=100,
                 pdf_grid_min=None,
                 pdf_grid_max=None,
@@ -78,11 +79,21 @@ def extract_pdf(model,
     if  hasattr(model.clf,'estimators_')==False:
         return None
 
-
-    trials=len(model.clf.estimators_)
-
     if z_phot is None:
-        z_phot=model.clf.predict(ml_dataset.features)
+        z_phot = model.clf.predict(ml_dataset.features)
+
+    if randomized_datasets is None:
+        trials=len(model.clf.estimators_)
+        pred_z_phot = model.eval_estimators_predictions(ml_dataset.features)
+    else:
+        trials=randomized_datasets.shape[0]
+
+        pred_z_phot=np.zeros((ml_dataset.features_N_rows,trials))
+        print('trials', trials, randomized_datasets.shape, pred_z_phot.shape)
+        for trial in range(trials):
+            pred_z_phot[:, trial]=model.clf.predict(randomized_datasets[trial])
+
+        print('prediction on random done')
 
     c1 = pf.Column(name='original_row_ID', format='J', array=ml_dataset.features_original_entry_ID)
     c2 = pf.Column(name='z_spec', format='D', array=ml_dataset.target_array)
@@ -96,8 +107,10 @@ def extract_pdf(model,
     coldefs = pf.ColDefs([c1,c2,c3,c4,c5,c6,c7,c8,c9])
     tbhdu = pf.BinTableHDU.from_columns(coldefs)
 
-    pred_z_phot = model.eval_estimators_predictions(ml_dataset.features)
 
+
+
+    #
     for trial in range(trials):
 
 

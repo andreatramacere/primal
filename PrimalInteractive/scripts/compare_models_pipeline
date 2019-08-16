@@ -18,7 +18,7 @@ __author__ = "Andrea Tramacere"
 # eg numpy
 # absolute import eg: import numpy as np
 import  argparse
-
+import copy
 # Project
 # relative import eg: from .mod import f
 from sklearn.base import clone
@@ -26,6 +26,7 @@ from sklearn.base import clone
 
 from PrimalCore.model_selection.model_validation import   model_learning_curve,model_validation_curve
 from PrimalCore.heterogeneous_table.table import    Table
+from PrimalCore.heterogeneous_table.tools import build_names_list
 from PrimalCore.homogeneous_table.dataset_handler    import *
 from PrimalInteractive.plotting.phz_plots import  *
 
@@ -59,6 +60,8 @@ def load_preproc_catalog(ph_catalog,target_col_name,cat_col_name_reg_ex=None,fit
     """
     catalog=Table.from_fits_file(ph_catalog,fits_ext=fits_file_ext)
 
+
+
     if cat_col_name_reg_ex is not None:
         catalog.keep_columns(cat_col_name_reg_ex,regex=True)
 
@@ -71,7 +74,35 @@ def load_preproc_catalog(ph_catalog,target_col_name,cat_col_name_reg_ex=None,fit
     dataset=MLDataSet.new_from_table(catalog,target_col_name=target_col_name,target_bins=20,target_binning='log',catalog_file=ph_catalog)
     return dataset
 
-def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify=True,split=True):
+def add_flux_ratio(dataset,overwrite=True):
+    flux_bands_list_2 = ['FLUX_G_2', 'FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_VIS', 'FLUX_VIS',
+                         'FLUX_VIS']
+    flux_bands_list_1 = ['FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_H_2', 'FLUX_Y_2', 'FLUX_J_2',
+                         'FLUX_H_2']
+
+    # This was input cell with execution count: 37
+    if overwrite is True:
+        _l=[]
+        for f1, f2 in zip(flux_bands_list_1, flux_bands_list_2):
+            f1_name = f1.split('_')[1]
+            f2_name = f2.split('_')[1]
+            if f1 in dataset.features_names and f2 in dataset.features_names:
+                _l.append('F_RATIO_%s' % (f2_name + '-' + f1_name))
+        drop_features(dataset,_l)
+
+
+    for f1, f2 in zip(flux_bands_list_1, flux_bands_list_2):
+        f1_name = f1.split('_')[1]
+        f2_name = f2.split('_')[1]
+        if f1 in dataset.features_names and f2 in dataset.features_names:
+            f = FluxRatio('F_RATIO_%s' % (f2_name + '-' + f1_name), f1, f2, features=dataset)
+            if overwrite is True and f.name in dataset.features_names:
+                dataset.set_feature(f.name,f.values)
+            else:
+                add_features(dataset, f.name, f.values)
+
+
+def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify=True,split=True,error_col_name_reg_ex=None):
     """
     Preprocessing of the dataset with evaluation of flux ratios
 
@@ -86,23 +117,39 @@ def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify
     -------
 
     """
-    flux_bands_list_2 = ['FLUX_G_2', 'FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_VIS', 'FLUX_VIS',
-                         'FLUX_VIS']
-    flux_bands_list_1 = ['FLUX_R_2', 'FLUX_I_2', 'FLUX_Z_2', 'FLUX_Y_2', 'FLUX_J_2', 'FLUX_H_2', 'FLUX_Y_2', 'FLUX_J_2',
-                         'FLUX_H_2']
 
-    # This was input cell with execution count: 37
-    for f1, f2 in zip(flux_bands_list_1, flux_bands_list_2):
-        f1_name = f1.split('_')[1]
-        f2_name = f2.split('_')[1]
-        if f1 in dataset.features_names and f2 in dataset.features_names:
-            f = FluxRatio('F_RATIO_%s' % (f2_name + '-' + f1_name), f1, f2, features=dataset)
-            add_features(dataset,f.name, f.values)
+    add_flux_ratio(dataset)
+    #print(dataset.features_names)
+    err_names=None
+    #print('1',build_names_list(feat_col_name_reg_ex,dataset.features_names))
+    #print('2',build_names_list(error_col_name_reg_ex,dataset.features_names))
 
+    #if error_col_name_reg_ex is not None:
+    #    add_list_reg_ex=build_names_list(feat_col_name_reg_ex,dataset.features_names).extend(error_col_name_reg_ex)[:]
+    #    err_names=build_names_list(error_col_name_reg_ex, dataset.features_names)
+    #else:
+    #    add_list_reg_ex=add_list_reg_ex[:]
 
-    # This was input cell with execution count: 11
+    add_list_reg_ex=None
     if feat_col_name_reg_ex is not None:
-        keep_features(dataset, feat_col_name_reg_ex, regex=True)
+        add_list_reg_ex=feat_col_name_reg_ex[:]
+
+        if error_col_name_reg_ex is not None:
+            if type(error_col_name_reg_ex)==list:
+                add_list_reg_ex.extend(error_col_name_reg_ex)
+            else:
+                add_list_reg_ex.append(error_col_name_reg_ex)
+
+    print('add_list_reg_ex',add_list_reg_ex)
+
+    if add_list_reg_ex is not None:
+        keep_features(dataset, add_list_reg_ex , regex=True)
+
+    if err_names is not None:
+        for err_name in err_names:
+            for (ID, f_name) in enumerate(dataset.features_names):
+                if err_name == f_name:
+                    dataset.columns_mask[ID] = False
 
     if split==True:
         train,test=dataset_train_test_split(dataset,train_ratio=train_ratio,stratify=stratify)
@@ -111,7 +158,26 @@ def preproc_mldataset(dataset,feat_col_name_reg_ex=None,train_ratio=0.1,stratify
         train=None
         test=dataset
 
+
+
     return  train,test
+
+def randomize_test(dataset,error_col_name_reg_ex,feat_col_name_reg_ex,num_random_samples):
+    random_set=np.zeros((num_random_samples,dataset.features_N_rows,dataset.columns_mask.sum()))
+
+    _d=copy.deepcopy(dataset)
+    build_names_list(error_col_name_reg_ex, dataset.features_names)
+    err_names_list = build_names_list(error_col_name_reg_ex, dataset.features_names)
+    feat_name_list=build_names_list(feat_col_name_reg_ex,dataset.features_names)
+    print(dataset.features_names)
+    for ID in range(num_random_samples):
+        print('random repl',ID)
+        for (e,f) in zip(err_names_list,feat_name_list):
+            _d.set_feature(f,np.random.normal(dataset.get_feature_by_name(f),dataset.get_feature_by_name(e)))
+        add_flux_ratio(_d)
+        random_set[ID]=_d.features
+
+    return  random_set
 
 def build_models(use_models_list=None):
     """
@@ -208,6 +274,7 @@ def pdf(model,
         pdf_grid_size,
         pdf_grid_min,
         pdf_grid_max,
+        test_random_array=None,
         saveplot=False,
         plot=False,
         skip_gmm=False,
@@ -221,6 +288,7 @@ def pdf(model,
 
     pdf_array = extract_pdf(model,
                             test,
+                            randomized_datasets=test_random_array,
                             pdf_grid_size=pdf_grid_size,
                             pdf_grid_min=pdf_grid_min,
                             pdf_grid_max=pdf_grid_max,
@@ -304,6 +372,7 @@ def predict_trained(test,
                     pdf_grid_size,
                     pdf_grid_min,
                     pdf_grid_max,
+                    test_random_array=None,
                     plot=False,
                     out_flag=None,
                     saveplot=False,
@@ -318,7 +387,16 @@ def predict_trained(test,
     single_regression(model, None, test, saveplot=saveplot, plot=plot,
                       title='%s_single_regression_from_saved' % _name,fit=False)
     model.save_mldataset_predictions('%s_single_regression_results_from_saved.fits' % (_name), test)
-    pdf(model, test, pdf_grid_size, pdf_grid_min, pdf_grid_max, flag='post_opt', saveplot=saveplot, skip_gmm=skip_gmm, out_flag=out_flag)
+    pdf(model,
+        test,
+        pdf_grid_size,
+        pdf_grid_min,
+        pdf_grid_max,
+        test_random_array=test_random_array,
+        flag='post_opt',
+        saveplot=saveplot,
+        skip_gmm=skip_gmm,
+        out_flag=out_flag)
 
 
 def train_and_predict(model_list,
@@ -327,12 +405,14 @@ def train_and_predict(model_list,
                       pdf_grid_size,
                       pdf_grid_min,
                       pdf_grid_max,
+                      test_random_array=None,
                       plot=False,
                       saveplot=False,
                       out_flag=None,
                       skip_gmm=False,
                       savemodel=False):
 
+    print('test_random_array',test_random_array.shape)
     for model in model_list:
         _name=model.name
 
@@ -352,6 +432,7 @@ def train_and_predict(model_list,
             pdf_grid_size,
             pdf_grid_min,
             pdf_grid_max,
+            test_random_array=test_random_array,
             flag='pre_opt',
             saveplot=saveplot,
             skip_gmm=skip_gmm,
@@ -379,11 +460,13 @@ def train_and_predict(model_list,
         clf = clone(model.clf)
         model.clf=clf
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % _name)
+
         pdf(p.model,
             test,
             pdf_grid_size,
             pdf_grid_min,
             pdf_grid_max,
+            test_random_array=test_random_array,
             flag='post_opt',
             saveplot=saveplot,
             skip_gmm=skip_gmm,
@@ -405,6 +488,8 @@ def run(input_fits_file,
         pdf_grid_max,
         use_models_list=[],
         train_test_split_ratio=0.1,
+        error_col_name_reg_ex=None,
+        num_random_samples=500,
         plot=False,
         saveplot=False,
         out_flag=None,
@@ -430,8 +515,13 @@ def run(input_fits_file,
 
     train, test = preproc_mldataset(ml_dataset,
                                     train_ratio=train_test_split_ratio,
-                                    feat_col_name_reg_ex=feat_col_name_reg_ex,split=split)
+                                    feat_col_name_reg_ex=feat_col_name_reg_ex,
+                                    error_col_name_reg_ex=error_col_name_reg_ex,
+                                    split=split)
 
+    test_random_array=None
+    if error_col_name_reg_ex is not None and num_random_samples is not None:
+        test_random_array=randomize_test(test,error_col_name_reg_ex,feat_col_name_reg_ex,num_random_samples)
 
     if loadmodel is None:
         train_and_predict(model_list,
@@ -440,13 +530,21 @@ def run(input_fits_file,
                           pdf_grid_size,
                           pdf_grid_min,
                           pdf_grid_max,
+                          test_random_array,
                           plot=plot,
                           saveplot=saveplot,
                           out_flag=out_flag,
                           skip_gmm=skip_gmm,
                           savemodel=savemodel)
     else:
-        predict_trained(test,model,pdf_grid_size,pdf_grid_min,pdf_grid_max,saveplot=saveplot,skip_gmm=skip_gmm,plot=plot)
+        predict_trained(test,model,
+                        pdf_grid_size,
+                        pdf_grid_min,
+                        pdf_grid_max,
+                        test_random_array,
+                        saveplot=saveplot,
+                        skip_gmm=skip_gmm,
+                        plot=plot)
 
 
 
@@ -457,9 +555,11 @@ def main(argv=None):
     parser.add_argument('input_fits_file', type=str, default=None )
     parser.add_argument('fits_file_ext', type=int, default=0 )
     parser.add_argument('target_column_name', type=str, default='z_spec_S15' )
-    parser.add_argument('-cat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX_VIS','reliable_S15','STAR','AGN','MASKED','FLAG_PHOT','z_spec_S15'])
+    parser.add_argument('-cat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX_VIS','FLUXERR*2','FLUXERR*VIS','reliable_S15','STAR','AGN','MASKED','FLAG_PHOT','z_spec_S15'])
     parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
+    parser.add_argument('-error_col_name_reg_ex', type=str, nargs='+', default=['FLUXERR*2','FLUXERR*VIS'])
     parser.add_argument('-use_models_list', type=str, default=['ada_boost'],nargs='+')
+    parser.add_argument('-num_random_samples', type=int, default=500)
     parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
     parser.add_argument('-skip_gmm', action='store_true')
     parser.add_argument('-plot',action='store_true')
@@ -485,6 +585,8 @@ def main(argv=None):
         args.pdf_grid_size,
         args.pdf_grid_min,
         args.pdf_grid_max,
+        error_col_name_reg_ex=args.error_col_name_reg_ex,
+        num_random_samples=args.num_random_samples,
         use_models_list=args.use_models_list,
         train_test_split_ratio=args.train_test_split_ratio,
         plot=args.plot,
