@@ -1,0 +1,3 @@
+#!groovy
+@Library('integration-library@release-8') _
+pipelineElements(artifactId:"Primal", component:'eden.2.1', repository:'eden.2.1')
