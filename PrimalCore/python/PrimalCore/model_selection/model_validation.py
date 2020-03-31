@@ -47,7 +47,7 @@ __author__ = "Andrea Tramacere"
 # Dependencies
 # eg numpy 
 # absolute import eg: import numpy as np
-from sklearn.model_selection import learning_curve
+from sklearn.model_selection import learning_curve,validation_curve
 import numpy as np
 # Project
 # relative import eg: from .mod import f
@@ -65,3 +65,22 @@ def model_learning_curve(model,training_test,cv=5,n_jobs=1,train_sizes=np.linspa
 
 
     return train_sizes, train_scores, test_scores
+
+
+def model_validation_curve(model,param_range,param_name,training_test,cv=5,n_jobs=1,scoring=None):
+
+
+    train_scores, test_scores = validation_curve(model.clf,
+                                                 training_test.features,
+                                                 training_test.target_array,
+                                                 param_range=param_range,
+                                                 cv=cv,
+                                                 n_jobs=n_jobs,
+                                                 param_name=param_name,
+                                                 scoring=scoring)
+
+
+
+
+
+    return  train_scores, test_scores

@@ -89,7 +89,7 @@ class BasePipeline(Pipeline):
 
 
         if scorer is not None:
-            self.sk_pipeline.named_steps['clf'].score = types.MethodType(scorer, self.sk_pipeline.named_steps['clf'], type(self.sk_pipeline.named_steps['clf']))
+            self.sk_pipeline.named_steps['clf'].score = types.MethodType(scorer, self.sk_pipeline.named_steps['clf'])
 
         _methods_names_list=['fit','predict']
 
