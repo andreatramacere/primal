@@ -26,6 +26,7 @@ __author__ = "Andrea Tramacere"
 # eg numpy
 # absolute import eg: import numpy as np
 import matplotlib.pyplot as plt
+
 import numpy as np
 # Project
 # relative import eg: from .mod import f
@@ -78,6 +79,46 @@ def plot_learning_curve(train_sizes, train_scores, test_scores,ax=None,fig=None,
     plt.tight_layout()
     y1,y2=p.ax.get_ylim()
     p.ax.set_ylim(y1-y1*0.1,y2+y2*0.1)
+    if plot == True:
+        plt.show()
+
+    return p
+
+
+def plot_validation_curve(train_scores,test_scores,param_values_array,par_name,scorer_name,plot=False,ax=None):
+
+
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+
+    #matplotlib.rcParams['xtick.labelsize'] = 18
+    #matplotlib.rcParams['ytick.labelsize'] = 18
+
+    p = PrimalPlot(ax)
+
+    p.ax.grid()
+    p.ax.set_xlabel("%s"%par_name,fontsize=18)
+    p.ax.set_ylabel("%s"%scorer_name,fontsize=18)
+
+    p.ax.plot(param_values_array, train_scores_mean,'o-', label=" Training score", color="g")
+    p.ax.fill_between(param_values_array, train_scores_mean - train_scores_std,
+                     train_scores_mean + train_scores_std, alpha=0.2, color="g")
+
+    p.ax.plot(param_values_array, test_scores_mean,'o-', label=" CV score",color="b")
+    p.ax.fill_between(param_values_array, test_scores_mean - test_scores_std,
+                      test_scores_mean + test_scores_std, alpha=0.2, color="b")
+
+
+    plt.tight_layout()
+    y1, y2 = p.ax.get_ylim()
+    p.ax.set_ylim(y1 - y1 * 0.1, y2 + y2 * 0.1)
+
+    p.ax.legend(loc="best")
+    #ax1.set_ylim([-0.1,ymax])
+    plt.tight_layout()
+
     if plot == True:
         plt.show()
 

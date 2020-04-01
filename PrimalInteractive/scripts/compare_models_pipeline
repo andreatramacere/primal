@@ -24,7 +24,7 @@ import  argparse
 
 
 
-from PrimalCore.model_selection.model_validation import   model_learning_curve
+from PrimalCore.model_selection.model_validation import   model_learning_curve,model_validation_curve
 from PrimalCore.heterogeneous_table.table import    Table
 from PrimalCore.homogeneous_table.dataset_handler    import *
 from PrimalInteractive.plotting.phz_plots import  *
@@ -123,7 +123,8 @@ def build_models(use_models_list=None):
     models_list=[]
     models_list.append(Regressor.ABRegressor(n_estimators=100,name='ada_boost'))
     models_list.append(Regressor.KNRegressor(name='KN'))
-    models_list.append(Regressor.RFRegressor(n_estimators=100,name='rand_forest'))
+    models_list.append(Regressor.RFRegressor(n_estimators=100,name='random_forest'))
+    models_list.append(Regressor.GBRegressor(n_estimators=100,name='gradient_boosting'))
     if use_models_list is not None:
         for model in models_list[:]:
             if model.name not in use_models_list:
@@ -226,13 +227,40 @@ def model_validation(model,train,saveplot=False,plot=False,scoring=None):
 
     """
     train_sizes, train_scores, test_scores=model_learning_curve(model,train,scoring=scoring)
+
+
+    if model.name in ['ada_boost', 'random_forest', 'gradient_boosting']:
+
+        param_name = 'n_estimators'
+        param_range = np.linspace(1, 500, 5).astype(np.int32)
+
+    elif model.name == 'SVR':
+        param_name = 'gamma'
+        param_range = np.logspace(-6, -1, 10)
+
+    elif model.name == 'KNeighborsRegressor':
+        param_name = 'n_neighbors'
+        param_range = np.linspace(1, 10, 5).astype(np.int32)
+
+    else:
+        raise RuntimeError("model %s  not supported" % model.name)
+
     if saveplot == True or plot == True:
-        p =plot_learning_curve(train_sizes, train_scores, test_scores,plot=plot)
+        p_lc =plot_learning_curve(train_sizes, train_scores, test_scores,plot=plot)
+
 
     if saveplot == True:
-        p.save_plot('learning_curve_%s.pdf' % (model.name))
+        p_lc.save_plot('learning_curve_%s.pdf' % (model.name))
 
 
+    train_scores, test_scores=model_validation_curve(model,param_range,param_name,train,scoring=scoring)
+
+
+    if saveplot == True or plot == True:
+        p_vc = plot_validation_curve(train_scores, test_scores,param_range,param_name,'outliers', plot=plot)
+
+    if saveplot == True:
+        p_vc.save_plot('validation_curve_%s.pdf' % (model.name))
 
 
 def run(input_fits_file,
@@ -273,7 +301,7 @@ def run(input_fits_file,
         model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (model.name), test)
 
 
-        pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
+        #pdf(p.model,test,flag='pre_opt',saveplot=saveplot)
 
 
 
@@ -295,7 +323,7 @@ def run(input_fits_file,
         #gets final performance for trained pipeline model
         single_regression(p.model, train, test, saveplot=saveplot, plot=plot, title='%s_single_regression_test_results_post_opt' % model.name)
 
-        pdf(p.model, test,flag='post_opt',saveplot=saveplot)
+        #pdf(p.model, test,flag='post_opt',saveplot=saveplot)
 
         model.save_mldataset_predictions('%s_single_regression_test_results_post_opt.fits' % (model.name), test)
 
@@ -310,6 +338,7 @@ def main(argv=None):
     parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
     parser.add_argument('-use_models_list', type=str, default=['ada_boost'],nargs='+')
     parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
+    parser.add_argument('-skip', action='store_true')
     parser.add_argument('-plot',action='store_true')
     parser.add_argument('-saveplot',action='store_true')
     parser.add_argument('-out_flag',type=str, default=None)
