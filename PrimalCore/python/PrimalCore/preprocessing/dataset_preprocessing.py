@@ -53,9 +53,13 @@ __author__ = "Andrea Tramacere"
 # eg numpy 
 # absolute import eg: import numpy as np
 import  numpy as np
-from sklearn.preprocessing import Imputer
+try:
+    from sklearn.preprocessing import Imputer
+except:
+    from sklearn.impute import SimpleImputer as Imputer
+
 from sklearn.preprocessing import StandardScaler
-from  sklearn.model_selection import StratifiedShuffleSplit,ShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit,ShuffleSplit
 
 
 
@@ -70,23 +74,24 @@ from ..homogeneous_table.dataset_handler import *
 # sklearn based
 #------------------------------------
 @check_dataset_decorate
-def handle_missing_values(dataset, missing_values='NaN', strategy='mean', axis=0):
+def handle_missing_values(dataset, missing_values='NaN',strategy='mean'):
     """
-    Replace missing values using the :class:`sklearn.preprocessing.Imputer class`
+    Replaces missing values using the :class:`sklearn.preprocessing.Imputer class`
 
     Parameters
     ----------
     missing_values
     strategy
-    axis
 
     Returns
     -------
 
     """
 
-    imp = Imputer(missing_values=missing_values, strategy=strategy, axis=axis)
+    imp = Imputer(missing_values=missing_values, strategy=strategy)
     dataset._features = imp.fit_transform(dataset._features)
+
+
 
 @check_dataset_decorate
 def std_features(dataset, test=None):
