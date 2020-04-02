@@ -206,7 +206,7 @@ def build_models(use_models_list=None):
 
 
 
-def feature_selection_results(model,train,support,n_features, scores,plot=False,saveplot=False,flag=None):
+def feature_selection_results(model,train,n_features, scores,plot=False,saveplot=False,flag=None):
     """
     Evaluate the features importance for the model, (makes/saves plots)
 
@@ -214,7 +214,6 @@ def feature_selection_results(model,train,support,n_features, scores,plot=False,
     ----------
     model
     train
-    support
     n_features
     scores
     plot
@@ -228,8 +227,8 @@ def feature_selection_results(model,train,support,n_features, scores,plot=False,
     if flag is not None:
         _name = '%s' % flag + '_' + _name
 
-    print ("selected features",n_features,np.array(train.features_names)[support])
-    feat_imp = model.feature_importances(feature_names=np.array(train.features_names)[support])
+    print ("selected features",n_features,np.array(train.features_names) )
+    feat_imp = model.feature_importances(feature_names=np.array(train.features_names) )
     if feat_imp is not None:
         if saveplot == True or plot == True:
             p = plot_features_imp(feat_imp['score'], feature_names=feat_imp['name'], plot=plot)
@@ -427,20 +426,21 @@ def train_and_predict(model_list,
 
         model.save_mldataset_predictions('%s_single_regression_test_results_pre_opt.fits' % (_name), test)
 
-        pdf(p.model,
-            test,
-            pdf_grid_size,
-            pdf_grid_min,
-            pdf_grid_max,
-            test_random_array=test_random_array,
-            flag='pre_opt',
-            saveplot=saveplot,
-            skip_gmm=skip_gmm,
-            out_flag=out_flag)
+        #pdf(p.model,
+        #    test,
+        #    pdf_grid_size,
+        #    pdf_grid_min,
+        #    pdf_grid_max,
+        #    test_random_array=test_random_array,
+        #    flag='pre_opt',
+        #    saveplot=saveplot,
+        #    skip_gmm=skip_gmm,
+        #    out_flag=out_flag)
 
 
 
-        #T his run the full pipeline
+        #This run the full pipeline
+        print('-->',train.features.shape,train.columns_mask.sum() )
         p.fit(train.features,train.target_array)
 
 
@@ -448,9 +448,12 @@ def train_and_predict(model_list,
         support=p.sk_pipeline.named_steps['rfecv'].support_
         n_features=p.sk_pipeline.named_steps['rfecv'].n_features_
         scores=p.sk_pipeline.named_steps['rfecv'].grid_scores_
+        train.selection_mask=support
+        test.selection_mask=support
 
         #plot rfecv results
-        feature_selection_results(p.model,train,support,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
+        print('-->',train.features.shape,train.columns_mask.sum() )
+        feature_selection_results(p.model,train,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
 
         #eval model validation for the trained pipeline model
         model_validation(p.model,train,saveplot=saveplot,scoring=outliers_score,flag=out_flag)

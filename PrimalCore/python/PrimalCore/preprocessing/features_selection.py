@@ -1,16 +1,16 @@
-#  
-# Copyright (C) 2012-2020 Euclid Science Ground Segment      
-#    
-# This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General    
-# Public License as published by the Free Software Foundation; either version 3.0 of the License, or (at your option)    
-# any later version.    
-#    
-# This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied    
-# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more    
-# details.    
-#    
-# You should have received a copy of the GNU Lesser General Public License along with this library; if not, write to    
-# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA    
+#
+# Copyright (C) 2012-2020 Euclid Science Ground Segment
+#
+# This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser General
+# Public License as published by the Free Software Foundation; either version 3.0 of the License, or (at your option)
+# any later version.
+#
+# This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+# warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Lesser General Public License along with this library; if not, write to
+# the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
 """
@@ -45,7 +45,7 @@ __author__ = "Andrea Tramacere"
 # absolute import rg:from copy import deepcopy
 
 # Dependencies
-# eg numpy 
+# eg numpy
 # absolute import eg: import numpy as np
 from sklearn.feature_selection import RFECV,RFE
 
@@ -89,9 +89,9 @@ def rec_feat_rem(model, training_set, filter=True, step=1, test_set=None,n_featu
     print("Optimal number of features : %d" % rfe.n_features_)
 
     if filter == True:
-        training_set.columns_mask = rfe.support_
+        training_set.selection_mask = rfe.support_
         if test_set is not None:
-            training_set.columns_mask = rfe.support_
+            test_set.selection_mask = rfe.support_
 
     return rfe.support_,rfe.n_features_
 
@@ -120,9 +120,9 @@ def rec_feat_rem_cv(model, training_set, cv=10, filter=True, test_set=None, scor
     print("Optimal number of features : %d" % rfecv.n_features_)
 
     if filter == True:
-        training_set.columns_mask=rfecv.support_
+        training_set.selection_mask=rfecv.support_
         if test_set is not None:
-            training_set.columns_mask = rfecv.support_
+            test_set.selection_mask = rfecv.support_
 
     return rfecv.support_,rfecv.n_features_,rfecv.grid_scores_,rfecv.ranking_
 
