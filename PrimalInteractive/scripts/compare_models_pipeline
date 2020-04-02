@@ -411,7 +411,8 @@ def train_and_predict(model_list,
                       skip_gmm=False,
                       savemodel=False):
 
-    print('test_random_array',test_random_array.shape)
+    if test_random_array is not None:
+        print('test_random_array',test_random_array.shape)
     for model in model_list:
         _name=model.name
 
@@ -440,7 +441,7 @@ def train_and_predict(model_list,
 
 
         #This run the full pipeline
-        print('-->',train.features.shape,train.columns_mask.sum() )
+        print('--> preselection features',train.features.shape)
         p.fit(train.features,train.target_array)
 
 
@@ -452,7 +453,7 @@ def train_and_predict(model_list,
         test.selection_mask=support
 
         #plot rfecv results
-        print('-->',train.features.shape,train.columns_mask.sum() )
+        print('--> postselection features',train.features.shape)
         feature_selection_results(p.model,train,n_features, scores,plot=plot,saveplot=saveplot,flag=out_flag)
 
         #eval model validation for the trained pipeline model
@@ -562,7 +563,7 @@ def main(argv=None):
     parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
     parser.add_argument('-error_col_name_reg_ex', type=str, nargs='+', default=['FLUXERR*2','FLUXERR*VIS'])
     parser.add_argument('-use_models_list', type=str, default=['ada_boost'],nargs='+')
-    parser.add_argument('-num_random_samples', type=int, default=500)
+    parser.add_argument('-num_random_samples', type=int, default=None)
     parser.add_argument('-train_test_split_ratio',type=np.float,default=0.1)
     parser.add_argument('-skip_gmm', action='store_true')
     parser.add_argument('-plot',action='store_true')
