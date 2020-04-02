@@ -89,9 +89,9 @@ def rec_feat_rem(model, training_set, filter=True, step=1, test_set=None,n_featu
     print("Optimal number of features : %d" % rfe.n_features_)
 
     if filter == True:
-        training_set.columns_mask = rfe.support_
+        training_set.selection_mask = rfe.support_
         if test_set is not None:
-            training_set.columns_mask = rfe.support_
+            test_set.selection_mask = rfe.support_
 
     return rfe.support_,rfe.n_features_
 
@@ -120,9 +120,9 @@ def rec_feat_rem_cv(model, training_set, cv=10, filter=True, test_set=None, scor
     print("Optimal number of features : %d" % rfecv.n_features_)
 
     if filter == True:
-        training_set.columns_mask=rfecv.support_
+        training_set.selection_mask=rfecv.support_
         if test_set is not None:
-            training_set.columns_mask = rfecv.support_
+            test_set.selection_mask = rfecv.support_
 
     return rfecv.support_,rfecv.n_features_,rfecv.grid_scores_,rfecv.ranking_
 

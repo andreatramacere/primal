@@ -142,7 +142,7 @@ class MLDataSet(object):
 
         self.columns_mask=columns_mask
         self.rows_mask=rows_mask
-
+        self.selection_mask = None
         print("| features built")
         print("| Rows,Cols",self.features_N_rows,self.features_N_cols)
 
@@ -161,7 +161,10 @@ class MLDataSet(object):
             the features `numpy.darray`, read-only.
 
         """
-        return self._features[self.rows_mask][:,self.columns_mask]
+        if self.selection_mask is None:
+            return self._features[self.rows_mask][:,self.columns_mask]
+        else:
+            return self._features[self.rows_mask][:, self.columns_mask][:,self.selection_mask]
 
     @property
     def columns_mask(self):
@@ -191,6 +194,7 @@ class MLDataSet(object):
         else:
             mask = np.ones(self.features_N_cols,dtype=np.bool)
         self._columns_mask=mask
+
 
     @property
     def rows_mask(self):
@@ -243,7 +247,14 @@ class MLDataSet(object):
             ids=np.where(self.columns_mask==True)[0]
         else:
             ids=self.columns_mask
-        return [self._features_names[i] for i in ids]
+        _l=[self._features_names[i] for i in ids]
+        if self.selection_mask is not None:
+            if np.issubdtype(self.selection_mask.dtype, np.bool):
+                ids = np.where(self.selection_mask == True)[0]
+            _l =[_l[i] for i in ids]
+
+        return _l
+
 
     @features_names.setter
     def features_names(self,names):
