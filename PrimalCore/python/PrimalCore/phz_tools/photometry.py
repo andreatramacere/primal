@@ -12,6 +12,7 @@ Summary
    AsinhMag
    Color
    AsinhColor
+   AsinhColorJy
    FluxRatio
 
 Module API
@@ -55,6 +56,9 @@ __author__ = "Andrea Tramacere"
 # Project
 # relative import eg: from .mod import f
 
+#-------------------------------
+# MT changes:
+# 1) AsinhColor, b --> b1, b2
       
 class Mag(object):
     """
@@ -67,7 +71,7 @@ class Mag(object):
     band_1 : sting
         name of the input feature
     zero_point: float
-        flux zero-point, by default 3.631E9 : AB mag for flux in mJy
+        flux zero-point, by default 3.631E9 : AB mag for flux in uJy
     features : optional, :class:`PrimalCore.python.PrimalCore.homogeneous_table.dataset.MLDataSet` object
 
     """
@@ -99,7 +103,7 @@ class AsinhMag(object):
     b:float
         softening parameter
     zero_point: float
-        flux zero-point, by default 3.631E9 : AB mag for flux in mJy
+        flux zero-point, by default 3.631E9 : AB mag for flux in uJy
 
     features : optional, :class:`PrimalCore.python.PrimalCore.homogeneous_table.dataset.MLDataSet` object
 
@@ -160,28 +164,31 @@ class AsinhColor(object):
         name of the input feature
     band_2 :
         name of the input feature
-    b:float
+    b_1:float
+        softening parameter
+    b_2:float
         softening parameter
     zero_point: float
-        flux zero-point, by default 3.631E9, : AB mag for flux in mJy
+        flux zero-point, by default 3.631E9, : AB mag for flux in uJy
     features : optional, :class:`PrimalCore.python.PrimalCore.homogeneous_table.dataset.MLDataSet` object
 
     """
-    def __init__(self,name,band_1,band_2,b,zero_point=3.631E9,features=None):
+    def __init__(self,name,band_1,band_2,b_1,b_2,zero_point=3.631E9,features=None):
 
         self.name=name
         self.band_1=band_1
         self.band_2=band_2
-        self.b=b
+        self.b_1=b_1
+        self.b_2=b_2
         self.zero_point=zero_point
 
         if features is not None:
-            self.values=self.build(features,self.band_1,self.band_2,self.b,self.zero_point)
+            self.values=self.build(features,self.band_1,self.band_2,self.b_1,self.b_2,self.zero_point)
 
 
-    def build(self,features,band_1,band_2,b,zero_point):
+    def build(self,features,band_1,band_2,b_1,b_2,zero_point):
         a = 1.0857362 # Pogson ratio = 2.5*log10(e)
-        return -a*(arcsinh(features.get_feature_by_name(band_2)/(zero_point*2.0*b)) - arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b))) 
+        return -a*(arcsinh(features.get_feature_by_name(band_2)/(zero_point*2.0*b_2))+log(b_2) - arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b_1))-log(b_1)) 
         
         
 
