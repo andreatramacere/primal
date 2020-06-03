@@ -52,6 +52,21 @@ def extract_pdf(model,
                 skip_gmm=False):
 
     """
+    Fit a Gaussian Mixture Model (GMM) to the redshift distribution and return an array where each element represents the PDF of a sample.
+
+    The PDF for each sample is a tuple that contains the following data
+    
+    - The sample's ID as given in the input data
+    - The spectroscopic redshift from the input data
+    - The photometric redshift as predicted by AdaBoost
+    - The redshift predicted by each estimator in AdaBoost
+    - The grid of redshifts for which the value of the PDF is given
+    - The PDF resulting from the GMM
+    - The mean mu of the GMM
+    - The variance sigma of the GMM
+    - The weights assigned to each model in the GMM
+
+    If `out_file_name` is specified, then the PDFs are also written to a file
 
     Parameters
     ----------
@@ -72,7 +87,8 @@ def extract_pdf(model,
 
     Returns
     -------
-    pdf :
+    pdf : ndarray
+        Array with the PDF for each sample
 
     """
 
