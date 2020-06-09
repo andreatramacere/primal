@@ -35,6 +35,7 @@ from sklearn.ensemble import GradientBoostingClassifier as GB
 from sklearn.ensemble import AdaBoostClassifier as AB
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn import svm
+from sklearn.tree import DecisionTreeClassifier
 
 import numpy as np
 
@@ -88,7 +89,7 @@ class Classifier(BaseModel):
         param_grid = {'n_estimators': n_estimators_range}
 
         return cls(RFC(n_estimators=100), par_grid_dict=param_grid)
-
+    
     @classmethod
     def GBClassifier(cls, ):
         n_estimators_range = np.arange(50, 500, 50)
@@ -99,6 +100,7 @@ class Classifier(BaseModel):
 
         return cls(GB(learning_rate=0.1), par_grid_dict=param_grid)
 
+    # MT: add inputs: n_estimators parameter; base estimator parameters
     @classmethod
     def ABClassifier(cls, ):
         n_estimators_range = np.arange(10, 260, 30)
@@ -123,3 +125,28 @@ class Classifier(BaseModel):
 
 
         return cls(svm.SVC(kernel='rbf'), par_grid_dict=param_grid)
+
+    # NEW
+    # MT: add parameters: n_estimators, max_depth, max_features, min_samples_split
+    @classmethod
+    def RFCClassifierPara(cls, n_estimators=100, max_depth=None, max_features='auto', min_samples_split=2):
+        n_estimators_range = np.arange(10, 260, 30)
+        param_grid = {'n_estimators': n_estimators_range}
+
+        return cls(RFC(n_estimators=n_estimators,
+                       max_depth=max_depth,
+                       max_features=max_features,
+                       min_samples_split=min_samples_split),
+                   par_grid_dict=param_grid)
+
+    # MT: add inputs: n_estimators parameter; base estimator parameters
+    @classmethod
+    def ABClassifierPara(cls, n_estimators=100, max_depth=None, max_features=None, min_samples_split=2):
+        n_estimators_range = np.arange(10, 260, 30)
+        param_grid = {'n_estimators': n_estimators_range}
+
+        ABclf = AB(base_estimator=DecisionTreeClassifier(max_depth=max_depth,
+                                                         max_features=max_features,
+                                                         min_samples_split=min_samples_split),
+                   n_estimators=n_estimators)
+        return cls(ABclf, par_grid_dict=param_grid)
