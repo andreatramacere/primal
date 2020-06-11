@@ -139,11 +139,12 @@ def extract_pdf(model,
                                            grid_max=pdf_grid_max,
                                            grid_min=pdf_grid_min,
                                            n_components=gmm_components)
+            n_components = len(mu)
             tbhdu.data['z_phot_pdf_grid'][entry] = z_grid
             tbhdu.data['z_phot_pdf'][entry] = gmm_pdf
-            tbhdu.data['z_gmm_mu'][entry] = mu
-            tbhdu.data['z_gmm_sig'][entry] = sig
-            tbhdu.data['z_gmm_w'][entry] = w
+            tbhdu.data['z_gmm_mu'][entry][:n_components] = mu
+            tbhdu.data['z_gmm_sig'][entry][:n_components] = sig
+            tbhdu.data['z_gmm_w'][entry][:n_components] = w
 
     if out_file_name is not None:
         header_tuple_list = [('cat_file', ml_dataset.catalog_file, 'catalog file')]
