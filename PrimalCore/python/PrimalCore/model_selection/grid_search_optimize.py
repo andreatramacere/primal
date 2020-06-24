@@ -52,12 +52,32 @@ from sklearn.model_selection  import StratifiedKFold
 
 
 
-
 def grid_search_stratified_kfold_cv(model,training_dataset,par_grid_dict=None):
-    kfold = StratifiedKFold(n_splits=10, random_state=1).split(training_dataset.fetures, training_dataset.target_array)
+    kfold = StratifiedKFold(n_splits=10, random_state=1).split(training_dataset.features, training_dataset.target_array)
     if par_grid_dict is None:
         param_grid=model.par_grid_dict
     g_search = GridSearchCV(model.clf, param_grid=param_grid, cv=kfold)
     g_search.fit(training_dataset.features,  training_dataset.target_array)
     print("best parameters are %s with a CV score  of %0.2f" % (g_search.best_params_, g_search.best_score_))
+    return g_search.best_params_, g_search.best_score_,g_search.best_estimator_
+
+
+# MT kfold:
+'''
+shuffle=True;
+fetures-->features;
+add: param_grid=par_grid_dict
+add: scoring
+%0.2f --> %0.4f
+'''
+
+def grid_search_stratified_kfold_cv_para(model,training_dataset,par_grid_dict=None,scoring=None):
+    kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=1).split(training_dataset.features, training_dataset.target_array)
+    if par_grid_dict is None:
+        param_grid=model.par_grid_dict
+    else:
+        param_grid=par_grid_dict
+    g_search = GridSearchCV(model.clf, param_grid=param_grid, cv=kfold, scoring=scoring)
+    g_search.fit(training_dataset.features,  training_dataset.target_array)
+    print("best parameters are %s with a CV score  of %0.4f" % (g_search.best_params_, g_search.best_score_))
     return g_search.best_params_, g_search.best_score_,g_search.best_estimator_
