@@ -50,7 +50,7 @@ class PhotometryTestCase(unittest.TestCase):
         self.assertEqual(computed.name,'COLOR_RI')
     
     def test_asinhColor(self):
-        computed = AsinhColor('ASINH_COLOR_RI','FLUX_I','FLUX_R',b=1E-10, zero_point=3.631E9,features=self.dataset)
+        computed = AsinhColor('ASINH_COLOR_RI','FLUX_I','FLUX_R',b_1=1E-10, b_2=1E-10, zero_point=3.631E9,features=self.dataset)
   
         self.assertAlmostEqual(computed.values[0], 0.09404202093, places=5)
         self.assertAlmostEqual(computed.values[1], 0.84148230758, places=5)        
