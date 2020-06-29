@@ -112,7 +112,8 @@ def extract_pdf(model,
         print('prediction on random done')
 
     c1 = pf.Column(name='original_row_ID', format='J', array=ml_dataset.features_original_entry_ID)
-    if hasattr(ml_dataset,'target_array') and ml_dataset._target_array is not None:
+
+    if  ml_dataset._target_array is not None:
         z_spec=ml_dataset.target_array
     else:
         z_spec=np.ones(ml_dataset.features_N_rows)*-1
