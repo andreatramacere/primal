@@ -112,7 +112,13 @@ def extract_pdf(model,
         print('prediction on random done')
 
     c1 = pf.Column(name='original_row_ID', format='J', array=ml_dataset.features_original_entry_ID)
-    c2 = pf.Column(name='z_spec', format='D', array=ml_dataset.target_array)
+
+    try:
+        z_spec=ml_dataset.target_array
+    except TypeError:
+        z_spec=np.ones(ml_dataset.features_N_rows)*-1
+
+    c2 = pf.Column(name='z_spec', format='D', array=z_spec)
     c3 = pf.Column(name='z_phot', format='D', array=z_phot)
     c4 = pf.Column(name='z_phot_values', format='%dD'%(trials), )
     c5 = pf.Column(name='z_phot_pdf_grid', format='%dD' % (pdf_grid_size), )
