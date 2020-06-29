@@ -113,9 +113,10 @@ def extract_pdf(model,
 
     c1 = pf.Column(name='original_row_ID', format='J', array=ml_dataset.features_original_entry_ID)
 
-    if  ml_dataset._target_array is not None:
+
+    try:
         z_spec=ml_dataset.target_array
-    else:
+    except TypeError:
         z_spec=np.ones(ml_dataset.features_N_rows)*-1
 
     c2 = pf.Column(name='z_spec', format='D', array=z_spec)
