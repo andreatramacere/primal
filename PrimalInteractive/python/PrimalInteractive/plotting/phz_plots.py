@@ -294,7 +294,7 @@ def plot_PIT_histogram(pit,ax=None,title='PIT',plot=False,bins=20,normed=True):
 
     p.ax.set_title(title)
 
-    p.ax.hist(pit,bins,normed=normed)
+    p.ax.hist(pit,bins,density=normed)
     p.ax.set_ylabel("norm. counts", fontsize=18)
     plt.tight_layout()
     if plot == True:
@@ -308,7 +308,7 @@ def plot_CRPS_histogram(crps, ax=None, title='CRPS', plot=False, bins=20,normed=
 
     p.ax.set_title(title+' %3.3f'%np.mean(crps))
 
-    p.ax.hist(crps, bins,normed=normed)
+    p.ax.hist(crps, bins,density=normed)
     p.ax.set_ylabel("norm. counts", fontsize=18)
     plt.tight_layout()
     if plot == True:
@@ -323,7 +323,7 @@ def plot_pdf(pdf_array,ID,ax=None,plot=False,normed=True,bins=20):
 
     p.ax.set_title('estimate of z_phot pdf')
 
-    p.ax.hist(pdf_array[ID]['z_phot_values'],label='pdf,',bins=bins,normed=normed)
+    p.ax.hist(pdf_array[ID]['z_phot_values'],label='pdf,',bins=bins,density=normed)
 
     y=p.ax.get_ylim()
     p.ax.plot([pdf_array[ID]['z_spec'],pdf_array[ID]['z_spec']],y,label='z_spec')
