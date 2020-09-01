@@ -41,7 +41,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 # relative import eg: from .mod import f
 from ..homogeneous_table.dataset_handler import check_dataset_decorate
 from ..io.fits import write_data
-from sklearn.externals import joblib
+import joblib
 import pickle
 class WrappedModel(object):
 
