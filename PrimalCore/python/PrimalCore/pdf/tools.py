@@ -113,7 +113,6 @@ def extract_pdf(model,
 
     c1 = pf.Column(name='original_row_ID', format='J', array=ml_dataset.features_original_entry_ID)
 
-
     try:
         z_spec=ml_dataset.target_array
     except TypeError:
