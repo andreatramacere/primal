@@ -89,7 +89,7 @@ class Classifier(BaseModel):
         param_grid = {'n_estimators': n_estimators_range}
 
         return cls(RFC(n_estimators=100), par_grid_dict=param_grid)
-    
+
     @classmethod
     def GBClassifier(cls, ):
         n_estimators_range = np.arange(50, 500, 50)
@@ -122,7 +122,6 @@ class Classifier(BaseModel):
         param_grid = {'C': C_range}
         gamma_range = np.logspace(-9, 3, 13)
         param_grid['gamma'] = gamma_range
-
 
         return cls(svm.SVC(kernel='rbf'), par_grid_dict=param_grid)
 
