@@ -40,7 +40,7 @@ from __future__ import absolute_import, division, print_function
 
 from builtins import (bytes, str, open, super, range,
                       zip, round, input, int, pow, object, map, zip)
-                      
+
 from numpy import log10, log, arcsinh
 
 __author__ = "Andrea Tramacere"
@@ -59,7 +59,7 @@ __author__ = "Andrea Tramacere"
 #-------------------------------
 # MT changes:
 # 1) AsinhColor, b --> b1, b2
-      
+
 class Mag(object):
     """
     Class to build a feature array of magnitude from a flux feature array
@@ -86,7 +86,7 @@ class Mag(object):
 
 
     def build(self,features,band_1,zero_point):
-        return -2.5*log10(features.get_feature_by_name(band_1)/zero_point) 
+        return -2.5*log10(features.get_feature_by_name(band_1)/zero_point)
 
 
 class AsinhMag(object):
@@ -121,7 +121,7 @@ class AsinhMag(object):
 
     def build(self,features,band_1,b,zero_point):
         a = 1.0857362 # Pogson ratio = 2.5*log10(e)
-        return -a*(arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b))+log(b)) 
+        return -a*(arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b))+log(b))
 
 class Color(object):
     """
@@ -150,7 +150,7 @@ class Color(object):
 
     def build(self,features,band_1,band_2):
         return features.get_feature_by_name(band_2)-features.get_feature_by_name(band_1)
-        
+
 class AsinhColor(object):
     """
     Class to build a feature array of Asinh colors from two flux features arrays
@@ -188,9 +188,8 @@ class AsinhColor(object):
 
     def build(self,features,band_1,band_2,b_1,b_2,zero_point):
         a = 1.0857362 # Pogson ratio = 2.5*log10(e)
-        return -a*(arcsinh(features.get_feature_by_name(band_2)/(zero_point*2.0*b_2))+log(b_2) - arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b_1))-log(b_1)) 
-        
-        
+        return -a*(arcsinh(features.get_feature_by_name(band_2)/(zero_point*2.0*b_2))+log(b_2) - arcsinh(features.get_feature_by_name(band_1)/(zero_point*2.0*b_1))-log(b_1))
+
 
 class FluxRatio(object):
     """

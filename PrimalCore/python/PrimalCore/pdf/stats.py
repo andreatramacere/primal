@@ -61,15 +61,25 @@ def eval_crps(z_values,z_true):
 
 
 
-def eval_pdf_gmm(z_values,n_components=2,grid_size=100):
+def eval_pdf_gmm(z_values,n_components=2,grid_size=100,grid_min=None,grid_max=None):
     models=[GaussianMixture(n_components=n).fit(z_values.reshape(z_values.size,1)) for n in range(1,n_components+1)]
 
     BICs = [m.bic(z_values.reshape(z_values.size,1)) for m in models]
 
-    t=np.linspace(z_values.min(),z_values.max(),grid_size)
-    logprob=models[np.argmin(BICs)].score_samples(t.reshape(t.size,1))
+    if grid_min is None:
+        grid_min=z_values.min()
+    if grid_max is None:
+        grid_max = z_values.max()
+    t=np.linspace(grid_min,grid_max,grid_size)
 
-    return t, np.exp(logprob)
+    best_m=models[np.argmin(BICs)]
+    logprob=best_m.score_samples(t.reshape(t.size,1))
+    mu=best_m.means_.flatten()
+    sig=np.sqrt(best_m.covariances_.flatten())
+    w=models[np.argmin(BICs)].weights_
+
+
+    return t, np.exp(logprob),mu,sig,w
 
 
 

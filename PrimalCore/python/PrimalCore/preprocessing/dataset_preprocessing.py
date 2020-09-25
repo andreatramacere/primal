@@ -59,8 +59,7 @@ except:
     from sklearn.impute import SimpleImputer as Imputer
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedShuffleSplit,ShuffleSplit
-
+from sklearn.model_selection import StratifiedShuffleSplit, ShuffleSplit
 
 
 # Project
@@ -74,9 +73,9 @@ from ..homogeneous_table.dataset_handler import *
 # sklearn based
 #------------------------------------
 @check_dataset_decorate
-def handle_missing_values(dataset, missing_values='NaN',strategy='mean'):
+def handle_missing_values(dataset, missing_values='NaN', strategy='mean'):
     """
-    Replaces missing values using the :class:`sklearn.preprocessing.Imputer class`
+    Replace missing values using the :class:`sklearn.preprocessing.Imputer class`
 
     Parameters
     ----------
@@ -90,8 +89,6 @@ def handle_missing_values(dataset, missing_values='NaN',strategy='mean'):
 
     imp = Imputer(missing_values=missing_values, strategy=strategy)
     dataset._features = imp.fit_transform(dataset._features)
-
-
 
 @check_dataset_decorate
 def std_features(dataset, test=None):
