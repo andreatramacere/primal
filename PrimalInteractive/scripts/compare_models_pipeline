@@ -554,6 +554,7 @@ def main(argv=None):
 
     parser.add_argument('input_fits_file', type=str, default=None )
     parser.add_argument('fits_file_ext', type=int, default=0 )
+    parser.add_argument('target_column_name', type=str, default='z_spec_S15' )
     parser.add_argument('-cat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX_VIS','FLUXERR*2','FLUXERR*VIS','reliable_S15','STAR','AGN','MASKED','FLAG_PHOT','z_spec_S15'])
     parser.add_argument('-feat_col_name_reg_ex', type=str, nargs='+',default= ['FLUX*2','FLUX*VIS','F_RATIO*'])
     parser.add_argument('-error_col_name_reg_ex', type=str, nargs='+', default=['FLUXERR*2','FLUXERR*VIS'])
