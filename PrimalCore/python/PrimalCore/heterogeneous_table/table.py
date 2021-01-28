@@ -367,7 +367,8 @@ class Table(object):
         """
         print("| filtering data rows")
         print("| data initial Rows =", self.N_rows)
-        self._data = self._data[~rows]
+        not_rows = [i for i in range(self.N_rows) if i not in rows]
+        self._data = self._data[not_rows]
         print("| data filtered initial Rows =", self.N_rows)
         print("")
 
